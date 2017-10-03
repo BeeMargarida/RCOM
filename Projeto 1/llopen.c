@@ -44,6 +44,8 @@ int llopen(int fd, int type) {
 
     tcflush(fd, TCIFLUSH);
     tcsetattr(fd,TCSANOW,&newtio);
+	
+	int first = 0;
 
     if(type == SENDER){    
         char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
@@ -80,26 +82,33 @@ int llopen(int fd, int type) {
         int x;
         int currentIndex = 0;
         while (STOP==FALSE) {       /* loop for input */
-            if(flag == 1){
-                break;
-            }
             x = read(fd, &input, 1);
             if (x == 0)
                 continue;
             res[currentIndex] = input;
-            if (res[currentIndex] == 0x7E)
-                break;
+            if (res[currentIndex] == 0x7E){
+				if(first == 0)
+					first = 1;
+				else{
+					printf("%x\n", res[currentIndex]);
+					first = 0;
+					break;
+				}
+			}
+            printf("%x\n", res[currentIndex]);
             currentIndex++;
+			if (currentIndex == 5) break;
         }
         if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03){
+			printf("ok\n");
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
             return 0;
         }
-        else  {
+     /*   else  {
             printf("There was a problem....ups\n");
             return -1;
-        }
+        }*/
     } else {
         return -1;
     }
