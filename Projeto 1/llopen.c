@@ -61,18 +61,26 @@ int llopen(int fd, int type) {
             int currentIndex = 0;
             while (STOP==FALSE) 
             {       /* loop for input */
-                if(flag == 1){
-                    break;
-                }
                 x = read(fd, &input, 1);
                 if (x == 0)
                     continue;
                 res[currentIndex] = input;
-                if (res[currentIndex] == 0x7E)
-                    break;
+                if (res[currentIndex] == 0x7E){
+                    if(first == 0)
+                        first = 1;
+                    else{
+                        first = 0;
+                        printf("%x\n", res[currentIndex]);
+                        return 0;
+                    }
+                }
+                printf("%x\n", res[currentIndex]);
                 currentIndex++;
+                if(currentIndex == 5) break;
             }
-            printf("%s\n", res);
+            if(STOP == TRUE){
+                return 0;
+            }
         }
         return 0;
     }
