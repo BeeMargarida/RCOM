@@ -3,7 +3,7 @@
 volatile int STOP=FALSE;
 int flag=1, conta=1;
 
-int receive_alarm() {
+void receive_alarm() {
     printf("alarme # %d\n", conta);
     flag=1;
     conta++;
@@ -22,7 +22,30 @@ int create_alarm() {
 }
 
 int llopen(int fd, int type) {
-    if(type == 0){    
+
+	int c, res;
+    struct termios oldtio,newtio;
+
+    fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY );
+    if (fd <0) {perror("Could not open serial port\n"); exit(-1); }
+
+    tcgetattr(fd,&oldtio); /* save current port settings */
+
+    bzero(&newtio, sizeof(newtio));
+    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+    newtio.c_iflag = IGNPAR;
+    newtio.c_oflag = 0;
+
+    /* set input mode (non-canonical, no echo,...) */
+    newtio.c_lflag = 0;
+
+    newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+    newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
+
+    tcflush(fd, TCIFLUSH);
+    tcsetattr(fd,TCSANOW,&newtio);
+
+    if(type == SENDER){    
         char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
         while(conta < 4){
            
@@ -51,7 +74,7 @@ int llopen(int fd, int type) {
         }
         return 0;
     }
-    else if(type == 1){
+    else if(type == RECEIVER){
         char res[5];
         char input;
         int x;

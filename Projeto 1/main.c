@@ -45,7 +45,7 @@ void printUsage()
 
 int startReceiver()
 {
-	llopen(0, 1);
+	llopen(0, RECEIVER);
 	//llread();
 	//llclose();
 	return 0;
@@ -59,7 +59,7 @@ int startSender(char* filename)
 		printf("Error: file %s does not exist\n", filename);
 		return 1;
 	}
-	llopen(0, 0);
+	llopen(0, SENDER);
 	//llwrite();
 	//llclose();
 	close(fd);

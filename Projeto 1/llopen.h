@@ -15,7 +15,12 @@
 #define FALSE 0
 #define TRUE 1
 
-int receive_alarm();
+enum
+{
+	SENDER, RECEIVER
+} types;
+
+void receive_alarm();
 int create_alarm();
 int llopen(int fd, int type);
 
