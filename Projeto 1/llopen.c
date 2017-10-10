@@ -11,13 +11,12 @@ void receive_alarm() {
 
 int create_alarm() {
     (void) signal(SIGALRM, receive_alarm);  // instala  rotina que atende interrupcao
-
-    while(conta < 4){
+   /* while(conta < 4){
        if(flag){
           alarm(3);                 // activa alarme de 3s
           flag=0;
        }
-    }
+    }*/
     printf("Vou terminar.\n");
 }
 
@@ -49,17 +48,19 @@ int llopen(int fd, int type) {
 
     if(type == SENDER){    
         char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
-        while(conta < 4){
+        create_alarm();
+        while(conta < 4 && flag == 1 ){
            
             write(fd, set, 5);
-
-            create_alarm();
+            
+            flag = 0;
+            alarm(3);
 
             char res[5];
             int x;
             char input;
             int currentIndex = 0;
-            while (STOP==FALSE) 
+            while (STOP==FALSE && flag == 0 ) 
             {       /* loop for input */
                 x = read(fd, &input, 1);
                 if (x == 0)
@@ -71,16 +72,19 @@ int llopen(int fd, int type) {
                     else{
                         first = 0;
                         printf("%x\n", res[currentIndex]);
-                        return 0;
+                        alarm(0);
+                        STOP = TRUE;
+                        //return 0;
                     }
                 }
                 printf("%x\n", res[currentIndex]);
                 currentIndex++;
                 if(currentIndex == 5) break;
             }
-            if(STOP == TRUE){
+            /*if(STOP == TRUE){
+            	alarm(0);
                 return 0;
-            }
+            }*/
         }
         return 0;
     }
