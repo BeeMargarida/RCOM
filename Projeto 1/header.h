@@ -23,5 +23,6 @@ enum
 void receive_alarm();
 int create_alarm();
 int llopen(int fd, int type);
+int llwrite(int fd, char* buf);
 
 #endif
