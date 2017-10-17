@@ -1,4 +1,4 @@
-#include "llopen.h"
+#include "data_link.h"
 
 volatile int STOP=FALSE;
 int flag=1, conta=1;
@@ -11,22 +11,39 @@ void receive_alarm() {
 
 int create_alarm() {
     (void) signal(SIGALRM, receive_alarm);  // instala  rotina que atende interrupcao
-   /* while(conta < 4){
-       if(flag){
-          alarm(3);                 // activa alarme de 3s
-          flag=0;
-       }
-    }*/
     printf("Vou terminar.\n");
 }
 
-int llopen(int fd, int type) {
+int llopen(int serial, int type) {
 
-	int c, res;
+    int c, res, fd;
     struct termios oldtio,newtio;
+    
+    switch (serial)
+    {
+        case 0:
+            fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY );
+            break;
+        case 1:
+            fd = open("/dev/ttyS1", O_RDWR | O_NOCTTY );
+            break;
+        case 2:
+            fd = open("/dev/ttyS2", O_RDWR | O_NOCTTY );
+            break;
+        case 3:
+            fd = open("/dev/ttyS3", O_RDWR | O_NOCTTY );
+            break;
+        default:
+            printf("Invalid serial port %d specified in llopen", serial);
+            return -1;
+    }
 
-    fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY );
-    if (fd <0) {perror("Could not open serial port\n"); exit(-1); }
+    
+    if (fd < 0) 
+    {
+        perror("Could not open serial port\n"); 
+        exit(-1); 
+    }
 
     tcgetattr(fd,&oldtio); /* save current port settings */
 
@@ -43,8 +60,8 @@ int llopen(int fd, int type) {
 
     tcflush(fd, TCIFLUSH);
     tcsetattr(fd,TCSANOW,&newtio);
-	
-	int first = 0;
+    
+    int first = 0;
 
     if(type == SENDER){    
         char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
@@ -74,17 +91,12 @@ int llopen(int fd, int type) {
                         printf("%x\n", res[currentIndex]);
                         alarm(0);
                         STOP = TRUE;
-                        //return 0;
                     }
                 }
                 printf("%x\n", res[currentIndex]);
                 currentIndex++;
                 if(currentIndex == 5) break;
             }
-            /*if(STOP == TRUE){
-            	alarm(0);
-                return 0;
-            }*/
         }
         return 0;
     }
@@ -99,29 +111,25 @@ int llopen(int fd, int type) {
                 continue;
             res[currentIndex] = input;
             if (res[currentIndex] == 0x7E){
-				if(first == 0)
-					first = 1;
-				else{
-					printf("%x\n", res[currentIndex]);
-					first = 0;
-					break;
-				}
-			}
+                if(first == 0)
+                    first = 1;
+                else{
+                    printf("%x\n", res[currentIndex]);
+                    first = 0;
+                    break;
+                }
+            }
             printf("%x\n", res[currentIndex]);
             currentIndex++;
-			if (currentIndex == 5) break;
+            if (currentIndex == 5) break;
         }
         if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03){
-			printf("ok\n");
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
             return 0;
         }
-     /*   else  {
-            printf("There was a problem....ups\n");
-            return -1;
-        }*/
     } else {
         return -1;
     }
+    return fd;
 }
