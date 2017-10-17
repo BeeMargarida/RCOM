@@ -142,6 +142,7 @@ int createFirstPacket(int fd) {
 
 struct tramaData * createDataPacket(int n){
 	char imageBuf[256] = {};
+
 	int size = getImageData(imageBuf);
 	unsigned char C = 0x01;
 	unsigned char N = n;
@@ -153,9 +154,10 @@ struct tramaData * createDataPacket(int n){
 	trama[2] = L2;
 	trama[3] = L1;
 	memcpy(trama+4, imageBuf, size * sizeof(unsigned char));	
-	struct tramaData *td;
+	struct tramaData *td = malloc(sizeof(struct tramaData));
 	td->trama = trama;
 	td->size = size + 4;
+
 	return td;
 }
 
@@ -174,8 +176,9 @@ int startSender(char* filename)
 		return 1;
 	}
 	serial_fd = llopen(serial_id, SENDER);
+	//serial_fd = 0;
 	llwrite(fdimage, serial_fd);
 	//llclose();
-	close(fd);
+	//close(fd);
 	return 0;
 }

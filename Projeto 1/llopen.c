@@ -98,7 +98,7 @@ int llopen(int serial, int type) {
                 if(currentIndex == 5) break;
             }
         }
-        return 0;
+        return fd;
     }
     else if(type == RECEIVER){
         char res[5];

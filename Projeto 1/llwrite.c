@@ -18,9 +18,9 @@ char* createTramaI(struct tramaData* buf){
 	memcpy(trama + 4, buf->trama, buf->size*sizeof(char));
 	trama[buf->size + 5 -1] = BCC2;
 	trama[buf->size + 6 -1] = F;
-	for(int i = 0; i < buf->size + 6; i++){
+	/*for(int i = 0; i < buf->size + 6; i++){
 		printf("%x\n", trama[i]);
-	}
+	}*/
 	return trama;
 }
 
@@ -29,5 +29,7 @@ int llwrite(int fdimage, int serial_fd) {
 	nSeq++;
 	char *tramaI = createTramaI(buf);
 	tramaC1 = ~tramaC1;
+	//char *lel = "bffvbwehofbaweuipfbaiofbaeiogb";
 	
+	write(serial_fd, tramaI, 267);
 }
