@@ -4,7 +4,10 @@
 #include <fcntl.h>
 #include "data_link.h"
 
-void printUsage();
+void printUsage()
+{
+	printf("Usage: rcom [-s filename] | [-r]\n");
+}
 
 int main(int argc, char** argv)
 {
@@ -35,13 +38,3 @@ int main(int argc, char** argv)
 		return 1;
 	}
 }
-
-void printUsage()
-{
-	printf("Usage: rcom [-s filename] | [-r]\n");
-}
-
-
-
-
-

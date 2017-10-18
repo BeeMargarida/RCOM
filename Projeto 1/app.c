@@ -3,10 +3,14 @@
 #include "llwrite.h"
 
 int fileSize = 0;
+char* filename;
 int fd = 0;
 int serial_fd = 0;
-char* filename;
 int serial_id = 0;
+int lastCycle = 0;
+
+int nSeq = 0; //is it right?
+
 
 // RECEIVER
 
@@ -104,7 +108,7 @@ int getfileSize() {
 	return 0;
 }
 
-int getImageData(char* buf) {
+int getImageData(unsigned char* buf) {
 	int x = read(fd, buf, 256);
 	if(x < 0){
 		printf("Error reading the file");
@@ -129,25 +133,35 @@ unsigned char* createTramaStartEnd(unsigned char *fsize, char *fname, int id){
 	return trama;
 }
 
-int createFirstPacket(int fd) {
+int createFirstEndPacket(int fd) {
 	getfileSize();
 	unsigned char comp[4];
 	comp[0] = (fileSize >> 24) & 0xFF;
 	comp[1] = (fileSize >> 16) & 0xFF;
 	comp[2] = (fileSize >> 8) & 0xFF;
 	comp[3] = fileSize & 0xFF;
-	char *buf = "pinguim.gif";
-	createTramaStartEnd(comp, buf, 0);
+	createTramaStartEnd(comp, filename, 0);
 }
 
 struct tramaData * createDataPacket(int n){
-	char imageBuf[256] = {};
-
+	unsigned char imageBuf[512] = {};
 	int size = getImageData(imageBuf);
+	if(size < 0){
+		return 0;
+	} else if(size < 256){
+		lastCycle = 1;
+	}
 	unsigned char C = 0x01;
 	unsigned char N = n;
-	unsigned char L2 = 0x01;
-	unsigned char L1 = 0x00;
+	unsigned char L2;
+	unsigned char L1;
+	if(size == 256){
+		L2 = 0x01;
+		L1 = 0x00;
+	} else {
+		L2 = 0x00;
+		L1 = size;
+	}
 	unsigned char *trama = malloc((4+size) * sizeof(unsigned char));
 	trama[0] = C;
 	trama[1] = N;
@@ -167,17 +181,36 @@ struct tramaData * getDataPacket(int f, int n){
 	return td;
 }
 
-int startSender(char* filename)
+int startSender(char* fileName)
 {
+	filename = malloc(sizeof(char) * strlen(fileName));
+	filename = fileName;
 	int fdimage = open(filename, O_RDONLY);
 	if (fdimage < 0)
 	{
 		printf("Error: file %s does not exist\n", filename);
 		return 1;
 	}
-	serial_fd = llopen(serial_id, SENDER);
-	//serial_fd = 0;
-	llwrite(fdimage, serial_fd);
+	//serial_fd = llopen(serial_id, SENDER);
+	serial_fd = 0;
+	/*while(!lastCycle){
+		struct tramaData* buf = malloc(sizeof(struct tramaData));
+		buf = getDataPacket(fdimage, nSeq);
+		if(buf == 0){
+			printf("Error reading the file\n");
+			return -1;
+		}
+		llwrite(fdimage, serial_fd, buf);
+		nSeq++;
+		char *response = malloc(5*sizeof(char));
+		int x = read(serial_fd, response, 5);
+		checkResponse(response);
+		
+	}*/
+	struct tramaData* buf = malloc(sizeof(struct tramaData));
+	buf = getDataPacket(fdimage, nSeq);
+	llwrite(fdimage, serial_fd, buf);
+	nSeq++;
 	//llclose();
 	//close(fd);
 	return 0;

@@ -16,6 +16,6 @@ struct tramaData
 };
 
 char* createTramaI(struct tramaData* buf);
-int llwrite(int fdimage, int serial_fd);
+int llwrite(int fdimage, int serial_fd, struct tramaData* buf);
 
 #endif
