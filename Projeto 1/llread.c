@@ -2,23 +2,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-char* lastData;
+char* lastData[BUF_SIZE];
 int serial_fd;
 
 int llread(int fd, char* buf)
 {
+	printf("In llread\n");
 	serial_fd = fd;
-	lastData = calloc(BUF_SIZE, sizeof(char));
-	
-	char* received;
-	received = calloc(BUF_SIZE, sizeof(char));
-	
+
+	char* received = (char*)calloc(BUF_SIZE, sizeof(char));
+
 	int reading = TRUE;
 	int nread;
 	while (reading)
 	{
-		nread = read(fd, &received, BUF_SIZE);
-		
+		nread = read(serial_fd, received, BUF_SIZE);
+		printf("Read %d bytes\n", nread);
+
 		if (nread < 0)
 		{
 			printf("Error reading from serial port on llread");
@@ -26,9 +26,9 @@ int llread(int fd, char* buf)
 		}
 		if (nread == 0)
 			continue;
-			
+/*
 		reading = FALSE;
-		processTram(received, buf);
+		processTram(received, buf);*/
 	}
 }
 
@@ -38,7 +38,7 @@ void processTram(char* tram, char* buf)
 	if (bcc1 == (tram[1] ^ tram[2]) && tram[2] == 0x03)
 		return;
 	char bcc2;
-	
+
 	int i = 4, j = 0;
 	int destuffing = TRUE;
 	while (destuffing)
@@ -47,7 +47,7 @@ void processTram(char* tram, char* buf)
 		{
 			bcc2 = tram[i];
 			destuffing = FALSE;
-			continue;	
+			continue;
 		}
 		if (tram[i] == 0x7D && tram[i + 1] == 0x5E)
 		{
@@ -69,13 +69,13 @@ void processTram(char* tram, char* buf)
 		i++;
 		j++;
 	}
-	
+
 	int check = generateBCC(buf, j);
 	if (bcc2 != check)
 		sendREJ();
-	
+
 	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
-	
+
 	if (isNew)
 	{
 		sendRR();

@@ -19,7 +19,7 @@ char* stuffingData(unsigned char * buf, int *size){
 		if(buf[i] == 0x7E){
 			trama[j] = 0x7D;
 			trama[j+1] = 0x5E;
-			size++; 
+			size++;
 			j+=2;
 		}
 		else if(buf[i] == 0x7D){
@@ -33,12 +33,13 @@ char* stuffingData(unsigned char * buf, int *size){
 			j++;
 		}
 		i++;
+
 		if (i == n)
 			stuffing = 0;
-	}
+	}/*
 	for(int i = 0; i < *size; i++){
 		printf("%x\n", trama[i]);
-	}
+	}*/
 
 	return trama;
 }
@@ -64,17 +65,19 @@ char* createTramaI(struct tramaData* buf){
 	memcpy(trama + 4, stuffedBuf, stuffedBuf->size*sizeof(char));
 	trama[buf->size + 5 -1] = BCC2;
 	trama[buf->size + 6 -1] = F;
-
+/*
 	printf("FACK\n");
 	for(int i = 0; i < stuffedBuf->size + 7; i++){
 		printf("%x\n", trama[i]);
-	}
+	}*/
 
 	return trama;
 }
 
-int llwrite(int fdimage, int serial_fd, struct tramaData* buf) {	
+int llwrite(int serial_fd, struct tramaData* buf) {
 	char *tramaI = createTramaI(buf);
-	tramaC1 = 1-tramaC1;	
-	write(serial_fd, tramaI, 267);
+	tramaC1 = 1-tramaC1;
+
+	int wrote = write(serial_fd, tramaI, 267);
+	printf("Wrote %d bytes\n", wrote);
 }

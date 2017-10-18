@@ -7,42 +7,43 @@ void receive_alarm() {
     printf("alarme # %d\n", conta);
     flag=1;
     conta++;
+    if (conta >= 4)
+      exit(-1);
 }
 
 int create_alarm() {
     (void) signal(SIGALRM, receive_alarm);  // instala  rotina que atende interrupcao
-    printf("Vou terminar.\n");
 }
 
 int llopen(int serial, int type) {
 
     int c, res, fd;
     struct termios oldtio,newtio;
-    
+
     switch (serial)
     {
         case 0:
-            fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY );
+            fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
             break;
         case 1:
-            fd = open("/dev/ttyS1", O_RDWR | O_NOCTTY );
+            fd = open("/dev/ttyS1", O_RDWR | O_NOCTTY);
             break;
         case 2:
-            fd = open("/dev/ttyS2", O_RDWR | O_NOCTTY );
+            fd = open("/dev/ttyS2", O_RDWR | O_NOCTTY);
             break;
         case 3:
-            fd = open("/dev/ttyS3", O_RDWR | O_NOCTTY );
+            fd = open("/dev/ttyS3", O_RDWR | O_NOCTTY);
             break;
         default:
             printf("Invalid serial port %d specified in llopen", serial);
             return -1;
     }
 
-    
-    if (fd < 0) 
+
+    if (fd < 0)
     {
-        perror("Could not open serial port\n"); 
-        exit(-1); 
+        perror("Could not open serial port\n");
+        exit(-1);
     }
 
     tcgetattr(fd,&oldtio); /* save current port settings */
@@ -60,16 +61,17 @@ int llopen(int serial, int type) {
 
     tcflush(fd, TCIFLUSH);
     tcsetattr(fd,TCSANOW,&newtio);
-    
+
     int first = 0;
 
-    if(type == SENDER){    
+    if(type == SENDER)
+    {
         char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
         create_alarm();
-        while(conta < 4 && flag == 1 ){
-           
+        while(conta < 4 && flag == 1 )
+        {
             write(fd, set, 5);
-            
+
             flag = 0;
             alarm(3);
 
@@ -77,7 +79,7 @@ int llopen(int serial, int type) {
             int x;
             char input;
             int currentIndex = 0;
-            while (STOP==FALSE && flag == 0 ) 
+            while (STOP==FALSE && flag == 0 )
             {       /* loop for input */
                 x = read(fd, &input, 1);
                 if (x == 0)
@@ -98,9 +100,20 @@ int llopen(int serial, int type) {
                 if(currentIndex == 5) break;
             }
         }
-        return fd;
+        if (TRUE /*falta testar a paridade da trama*/)
+        {
+          printf("llopen exited successfully\n");
+          return fd;
+        }
+        else
+        {
+          printf("Error in llopen: invalid tram\n");
+          return -1;
+        }
     }
-    else if(type == RECEIVER){
+
+    else if(type == RECEIVER)
+    {
         char res[5];
         char input;
         int x;
@@ -123,13 +136,19 @@ int llopen(int serial, int type) {
             currentIndex++;
             if (currentIndex == 5) break;
         }
-        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03){
+
+        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03)
+        {
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
-            return 0;
+            printf("llopen exited successfully\n");
+            return fd;
         }
-    } else {
-        return -1;
+        else
+        {
+          printf("Error in llopen: invalid tram\n");
+          return -1;
+        }
     }
-    return fd;
+    return -1;
 }

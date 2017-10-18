@@ -17,7 +17,7 @@ int nSeq = 0; //is it right?
 int startReceiver()
 {
 	serial_fd = llopen(serial_id, RECEIVER);
-	
+
 	int reading = 1;
 	char buf[512];
 	int first = 0;
@@ -46,7 +46,7 @@ int startReceiver()
 		else
 			unpackDataPacket(buf);
 	}
-	
+
 	return llclose(serial_fd);
 }
 
@@ -167,7 +167,7 @@ struct tramaData * createDataPacket(int n){
 	trama[1] = N;
 	trama[2] = L2;
 	trama[3] = L1;
-	memcpy(trama+4, imageBuf, size * sizeof(unsigned char));	
+	memcpy(trama+4, imageBuf, size * sizeof(unsigned char));
 	struct tramaData *td = malloc(sizeof(struct tramaData));
 	td->trama = trama;
 	td->size = size + 4;
@@ -183,6 +183,8 @@ struct tramaData * getDataPacket(int f, int n){
 
 int startSender(char* fileName)
 {
+	serial_fd = llopen(serial_id, SENDER);
+	
 	filename = malloc(sizeof(char) * strlen(fileName));
 	filename = fileName;
 	int fdimage = open(filename, O_RDONLY);
@@ -192,7 +194,6 @@ int startSender(char* fileName)
 		return 1;
 	}
 	//serial_fd = llopen(serial_id, SENDER);
-	serial_fd = 0;
 	/*while(!lastCycle){
 		struct tramaData* buf = malloc(sizeof(struct tramaData));
 		buf = getDataPacket(fdimage, nSeq);
@@ -205,11 +206,13 @@ int startSender(char* fileName)
 		char *response = malloc(5*sizeof(char));
 		int x = read(serial_fd, response, 5);
 		checkResponse(response);
-		
+
 	}*/
 	struct tramaData* buf = malloc(sizeof(struct tramaData));
 	buf = getDataPacket(fdimage, nSeq);
-	llwrite(fdimage, serial_fd, buf);
+
+	llwrite(serial_fd, buf);
+
 	nSeq++;
 	//llclose();
 	//close(fd);
