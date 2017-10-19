@@ -9,7 +9,7 @@ int llread(int fd, char* buf)
 {
 	serial_fd = fd;
 
-	char* received = (char*)calloc(BUF_SIZE, sizeof(char));
+	unsigned char* received = (unsigned char*)calloc(BUF_SIZE, sizeof(unsigned char));
 
 	int reading = TRUE;
 	int nread;
@@ -17,7 +17,6 @@ int llread(int fd, char* buf)
 	while (reading)
 	{
 		nread = read(serial_fd, received + i, BUF_SIZE);
-
 		if (nread < 0)
 		{
 			printf("Error reading from serial port on llread");
@@ -25,12 +24,9 @@ int llread(int fd, char* buf)
 		}
 		if (nread == 0){
 			reading = FALSE;
-		/*	printf("Size: %d Trama:\n", i);
-			for (int a = 0; a < i; a++)
-				printf("%c", received[a]);
-			printf("\n");*/
-			processTram(received, buf);
-		}
+			printf("Size: %d Trama:\n", i);
+			processTram(received, buf);			
+		}	
 		i += nread;
 	}
 	return i;
@@ -40,23 +36,26 @@ int destuffing (unsigned char* tram, unsigned char* buf) {
 	int destuffing = 1;
 	int i = 4, j = 0;
 	while(destuffing){
-		if(tram[i] == 0x7D & tram[i + 1] != 0x5D){
+		if(tram[i] == 0x7D & tram[i + 1] == 0x5E){
 			buf[j] = 0x7E;
 			j++;
-			i++;
+			i+=2;
 		}
 		else if(tram[i] == 0x7D & tram[i + 1] == 0x5D){
 			buf[j] = 0x7D;
 			j++;
 			i+=2;
 		}
+		else if(tram[i] == 0x7E){
+			destuffing = 0;
+			buf[j] = tram[i];
+			break;
+		}
 		else {
 			buf[j] = tram[i];
 			j++;
 			i++;
 		}
-		if (tram[i] == NULL)
-			destuffing = 0;
 	}
 	return j;
 }
@@ -69,37 +68,6 @@ void processTram(unsigned char* tram, unsigned char* buf)
 	char bcc2;
 	
 	int j = destuffing(tram, buf);
-	
-	/*int i = 4, j = 0;
-	int destuffing = TRUE;
-	while (destuffing)
-	{
-		if (tram[i + 1] == 0x7E)
-		{
-			bcc2 = tram[i];
-			destuffing = FALSE;
-			continue;
-		}
-		if (tram[i] == 0x7D && tram[i + 1] == 0x5E)
-		{
-			buf = realloc(buf, sizeof(buf) + sizeof(unsigned char));
-			buf[j] = 0x7E;
-			i++;
-		}
-		if (tram[i] == 0x7D && tram[i + 1] == 0x5D)
-		{
-			buf = realloc(buf, sizeof(buf) + sizeof(unsigned char));
-			buf[j] = 0x7D;
-			i++;
-		}
-		else
-		{
-			buf = realloc(buf, sizeof(buf) + sizeof(unsigned char));
-			buf[j] = buf[i];
-		}
-		i++;
-		j++;
-	}*/
 
 	int check = generateBCC(buf, j);
 	if (bcc2 != check)

@@ -51,8 +51,8 @@ control_packet_t createTramaI(control_packet_t packet){
 	unsigned char C1 = (turn == 0 ? 0x00 : 0x40);
 	unsigned char BCC1 = A ^ C1;
 	unsigned char BCC2 = packet.params[0];
-	printf("Size bitch%d\n", packet.size);
-	for(int i = 1; i < packet.size; i++){
+	int i = 1;
+	for(i; i < packet.size; i++){
 		BCC2 ^= packet.params[i];
 	}
 
@@ -72,10 +72,6 @@ control_packet_t createTramaI(control_packet_t packet){
 	packetI.params = trama;
 	packetI.size = stuffedPacket.size + 6;
 
-	printf("FACK\n");
-	for(int i = 0; i < stuffedPacket.size + 6; i++){
-		printf("%x\n", packetI.params[i]);
-	}
 	return packetI;
 }
 

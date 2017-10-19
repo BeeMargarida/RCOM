@@ -3,7 +3,6 @@
 
 int fileSize = 0;
 unsigned char* filename;
-int fd = 0;
 int serial_fd = 0;
 int serial_id = 0;
 int lastCycle = 0;
@@ -12,17 +11,17 @@ int fileDescriptor = 0;
 
 
 // RECEIVER
-
 int startReceiver()
 {
 	serial_fd = llopen(serial_id, RECEIVER);
 
-	int reading = 1;
-	char buf[512];
-	int first = 0;
+	int reading = TRUE;
+	unsigned char buf[512];
+	int first = FALSE;
 	while (reading)
-	{
+	{	
 		int read = llread(serial_fd, buf);
+		
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -31,31 +30,42 @@ int startReceiver()
 		if (read == 0)
 			continue;
 
-		if (buf[0] == DATA_START && first == 0)
+		printf("\nstartReceiver packet:\n");
+		printf("Packet size: %d\n", read);
+		int x = 0;
+		for (x; x < read; x++)
+			printf(": %x ", buf[x]);
+		printf("\n");
+
+		if (buf[0] == DATA_START && first == FALSE)
 		{
-			first = 1;
+			printf("Processing trama START\n");
+			first = TRUE;
 			unpackStartPacket(buf);
 
 		}
-		else if (buf[0] == DATA_END)
+		else if (buf[0] == DATA_END && first == TRUE)
 		{
+			printf("Processing trama END\n");
 			unpackEndPacket(buf);
-			reading = 0;
+			reading = FALSE;
 		}
-		else
+		else if (first == TRUE)
+		{
+			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
+		}
 	}
-
 	return llclose(serial_fd);
 }
 
-void unpackStartPacket(char* buf)
+void unpackStartPacket(unsigned char* buf)
 {
 	int i;
 	if (buf[1] == FILESIZE)
 	{
 		int sizelength = buf[2];
-		for (i = 3; i < sizelength; i++)
+		for (i = 3; i < sizelength + 3; i++)
 		{
 			fileSize << 8;
 			fileSize |= buf[i];
@@ -67,30 +77,34 @@ void unpackStartPacket(char* buf)
 	{
 		i++;
 		int namelength = buf[i];
-		filename = malloc(sizeof(char) * namelength);
+		filename = malloc(sizeof(unsigned char) * namelength);
 		int j;
-		for (i += 1, j = 0; i < namelength; i++, j++)
+		int n = i;
+		for (i += 1, j = 0; i <= namelength + n; i++, j++)
 			filename[j] = buf[i];
 		printf("File name: %s\n", filename);
 	}
 
-	fd = open(filename, O_WRONLY | O_CREAT, MODE);
-	if (fd < 0)
+	fileDescriptor = open(filename, O_WRONLY | O_CREAT, MODE);
+	if (fileDescriptor < 0)
 	{
 		printf("Error opening/creating file %s\n", filename);
 	}
 }
 
-void unpackDataPacket(char* buf){
+void unpackDataPacket(unsigned char* buf)
+{
 	int seqN = buf[1];
 	printf("Processing packet %d\n", seqN);
 	int n = 256 * buf[2] + buf[3];
 	int i;
-	for (i = 4; i < n; i++)
-		write(fd, buf[i], 1);
+	for (i = 4; i < n; i++){
+		write(fileDescriptor, buf[i], 1);
+	}
 }
 
-void unpackEndPacket(char* buf){
+void unpackEndPacket(char* buf)
+{
 	printf("Last packet received\n");
 	return;
 }
