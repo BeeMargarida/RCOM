@@ -17,29 +17,60 @@ int llread(int fd, char* buf)
 	while (reading)
 	{
 		nread = read(serial_fd, received, BUF_SIZE);
-		printf("Read %d bytes\n", nread);
+		printf("Read %d bytes: %s\n", nread, received);
 
 		if (nread < 0)
 		{
 			printf("Error reading from serial port on llread");
 			return 1;
 		}
-		if (nread == 0)
-			continue;
-/*
-		reading = FALSE;
-		processTram(received, buf);*/
+		if (nread == 0){
+			reading = FALSE;
+			
+			int i = 0;
+			for(i; i < 10; i++){
+				printf("%x\n", received[i]);
+			}
+			processTram(received, buf);
+		}
 	}
 }
 
-void processTram(char* tram, char* buf)
+int destuffing (unsigned char* tram, unsigned char* buf) {
+	int destuffing = 1;
+	int i = 4, j = 0;
+	while(destuffing){
+		if(tram[i] == 0x7D & tram[i + 1] != 0x5D){
+			buf[j] = 0x7E;
+			j++;
+			i++;
+		}
+		else if(tram[i] == 0x7D & tram[i + 1] == 0x5D){
+			buf[j] = 0x7D;
+			j++;
+			i+=2;
+		}
+		else {
+			buf[j] = tram[i];
+			j++;
+			i++;
+		}
+		if (tram[i] == NULL)
+			destuffing = 0;
+	}
+	return j;
+}
+
+void processTram(unsigned char* tram, unsigned char* buf)
 {
 	char bcc1 = tram[3];
 	if (bcc1 == (tram[1] ^ tram[2]) && tram[2] == 0x03)
 		return;
 	char bcc2;
-
-	int i = 4, j = 0;
+	
+	int j = destuffing(tram, buf);
+	
+	/*int i = 4, j = 0;
 	int destuffing = TRUE;
 	while (destuffing)
 	{
@@ -51,24 +82,24 @@ void processTram(char* tram, char* buf)
 		}
 		if (tram[i] == 0x7D && tram[i + 1] == 0x5E)
 		{
-			buf = realloc(buf, sizeof(buf) + sizeof(char));
+			buf = realloc(buf, sizeof(buf) + sizeof(unsigned char));
 			buf[j] = 0x7E;
 			i++;
 		}
 		if (tram[i] == 0x7D && tram[i + 1] == 0x5D)
 		{
-			buf = realloc(buf, sizeof(buf) + sizeof(char));
+			buf = realloc(buf, sizeof(buf) + sizeof(unsigned char));
 			buf[j] = 0x7D;
 			i++;
 		}
 		else
 		{
-			buf = realloc(buf, sizeof(buf) + sizeof(char));
+			buf = realloc(buf, sizeof(buf) + sizeof(unsigned char));
 			buf[j] = buf[i];
 		}
 		i++;
 		j++;
-	}
+	}*/
 
 	int check = generateBCC(buf, j);
 	if (bcc2 != check)

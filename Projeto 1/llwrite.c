@@ -74,10 +74,58 @@ char* createTramaI(struct tramaData* buf){
 	return trama;
 }
 
+void sendTrama(int serial_fd, unsigned char* buf){
+	int wrote = write(serial_fd, buf, 267);
+	printf("Wrote %d bytes\n", wrote);
+}
+
+int waitForAnswer(int serial_fd){
+	int reading = TRUE;
+	int nread;
+	unsigned char rr[5] = {0x7e, 0x03, 0x05, 0x01, 0x7e};
+	unsigned char rej[5] = {0x7e, 0x03, 0x05, 0x01, 0x7e};
+
+	unsigned char answer[5] = {};
+	while (reading)
+	{
+		nread = read(serial_fd, answer, 5);
+		printf("Read %d bytes\n", nread);
+
+		if (nread < 0)
+		{
+			printf("Error reading answer");
+			return 1;
+		}
+		int i = 0; 
+		for(i; i < nread; i++){
+			printf("%x\n", answer[i]);
+			if(answer[i] != rr[i]){
+				printf("deu merda\n");
+				break;
+			}
+		}
+		for(i = 0; i < nread; i++){
+			if(answer[i] != rej[i]){
+				printf("merdou mesmo\n");
+				reading = FALSE;
+				break;
+			}
+		}
+		if(i == 5){
+			printf("esta fixe\n");
+			reading = FALSE;
+			break;
+		}
+	}
+	//return 1 ou 0 consoante o "turno"
+	return 0;
+}
+
 int llwrite(int serial_fd, struct tramaData* buf) {
-	char *tramaI = createTramaI(buf);
+	unsigned char *tramaI = createTramaI(buf);
 	tramaC1 = 1-tramaC1;
 
-	int wrote = write(serial_fd, tramaI, 267);
-	printf("Wrote %d bytes\n", wrote);
+	sendTrama(serial_fd, tramaI);
+	int i = waitForAnswer(serial_fd);
+	verifyAnswer(i);
 }

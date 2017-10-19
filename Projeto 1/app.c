@@ -8,8 +8,11 @@ int fd = 0;
 int serial_fd = 0;
 int serial_id = 0;
 int lastCycle = 0;
+int fdimage = 0;
 
 int nSeq = 0; //is it right?
+
+int turn = 0;
 
 
 // RECEIVER
@@ -181,39 +184,41 @@ struct tramaData * getDataPacket(int f, int n){
 	return td;
 }
 
+void sendDataPacket() {
+	struct tramaData* buf = malloc(sizeof(struct tramaData));
+	buf = getDataPacket(fdimage, nSeq);
+
+	llwrite(serial_fd, buf);
+	turn = turn == 0 ? 1 : 0;
+					printf("merdou mesmo\n");
+
+	nSeq++;
+}
+
+void verifyAnswer(int answer){
+	if(answer != turn){
+		printf("merdou outra vez\n");
+	}
+	else{
+		printf("correu bem\n");
+		sendDataPacket();
+	}
+}
+
 int startSender(char* fileName)
 {
 	serial_fd = llopen(serial_id, SENDER);
 	
 	filename = malloc(sizeof(char) * strlen(fileName));
 	filename = fileName;
-	int fdimage = open(filename, O_RDONLY);
+	fdimage = open(filename, O_RDONLY);
 	if (fdimage < 0)
 	{
 		printf("Error: file %s does not exist\n", filename);
 		return 1;
 	}
-	//serial_fd = llopen(serial_id, SENDER);
-	/*while(!lastCycle){
-		struct tramaData* buf = malloc(sizeof(struct tramaData));
-		buf = getDataPacket(fdimage, nSeq);
-		if(buf == 0){
-			printf("Error reading the file\n");
-			return -1;
-		}
-		llwrite(fdimage, serial_fd, buf);
-		nSeq++;
-		char *response = malloc(5*sizeof(char));
-		int x = read(serial_fd, response, 5);
-		checkResponse(response);
 
-	}*/
-	struct tramaData* buf = malloc(sizeof(struct tramaData));
-	buf = getDataPacket(fdimage, nSeq);
-
-	llwrite(serial_fd, buf);
-
-	nSeq++;
+	sendDataPacket();
 	//llclose();
 	//close(fd);
 	return 0;
