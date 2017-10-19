@@ -39,8 +39,8 @@ void writeDataStart(char* buf);
 void writeDataBlock(char* buf);
 int getfileSize();
 int getImageData(unsigned char* buf);
-unsigned char* createTramaStartEnd(unsigned char *fsize, char *fname, int id);
-int createFirstEndPacket(int fd);
+void createTramaStartEnd(unsigned char *fsize, char *fname, int id);
+void createFirstEndPacket();
 struct tramaData * createDataPacket(int n);
 struct tramaData* getDataPacket(int f, int n);
 

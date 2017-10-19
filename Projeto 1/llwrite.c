@@ -104,11 +104,13 @@ int waitForAnswer(int serial_fd){
 				break;
 			}
 		}
-		for(i = 0; i < nread; i++){
-			if(answer[i] != rej[i]){
-				printf("merdou mesmo\n");
-				reading = FALSE;
-				break;
+		if(i < 5){
+			for(i = 0; i < nread; i++){
+				if(answer[i] != rej[i]){
+					printf("merdou mesmo\n");
+					reading = FALSE; //return error
+					break;
+				}
 			}
 		}
 		if(i == 5){

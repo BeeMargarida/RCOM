@@ -1,6 +1,6 @@
 
 int llclose(int fd, int SorR){
-	int dc = 0;
+	/*int dc = 0;
 	inc conta = 0;
 
 	char *discS[5] = {};
@@ -28,7 +28,7 @@ int llclose(int fd, int SorR){
 				int n = 
 			}
 	}
-
+*/
 
 	return close(fd);
 }

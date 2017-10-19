@@ -106,13 +106,13 @@ void unpackEndPacket(char* buf)
 // SENDER
 int getfileSize() {
 	struct stat st;
-	fstat(fd, &st);
+	fstat(fdimage, &st);
 	fileSize = st.st_size;
 	return 0;
 }
 
 int getImageData(unsigned char* buf) {
-	int x = read(fd, buf, 256);
+	int x = read(fdimage, buf, 256);
 	if(x < 0){
 		printf("Error reading the file");
 		return -1;
@@ -120,23 +120,23 @@ int getImageData(unsigned char* buf) {
 	return x;
 }
 
-unsigned char* createTramaStartEnd(unsigned char *fsize, char *fname, int id){
+void createTramaStartEnd(unsigned char *fsize, char *fname, int id){
 	char C = id == 0  ? 0x02 : 0x03; //flag de start
 	char T1 = 0x00; //type = tamanho do ficheiro
 	char L1 = 0x04; //tamanho de V1
 	char T2 = 0x01; //type = nome do ficheiro
 	char L2 = 0x0B; //tamanho do nome pinguim.gif
 
-	unsigned char *trama = malloc(19 * sizeof(unsigned char));
+	unsigned char *trama = malloc(20 * sizeof(unsigned char));
 	trama[0] = C; trama[1] = T1; trama[2] = L1;
 	memcpy(trama + 3, fsize, 4*sizeof(unsigned char));
 	trama[7] = T2;
 	trama[8] = L2;
 	memcpy(trama + 9, fname, 11*sizeof(unsigned char));
-	return trama;
+	sendStartEndPacket(trama);
 }
 
-int createFirstEndPacket(int fd) {
+void createFirstEndPacket() {
 	getfileSize();
 	unsigned char comp[4];
 	comp[0] = (fileSize >> 24) & 0xFF;
@@ -144,6 +144,18 @@ int createFirstEndPacket(int fd) {
 	comp[2] = (fileSize >> 8) & 0xFF;
 	comp[3] = fileSize & 0xFF;
 	createTramaStartEnd(comp, filename, 0);
+	
+}
+
+void sendStartEndPacket(unsigned char *buf){
+	struct tramaData *tramaStruct = malloc(sizeof(struct tramaData));
+	tramaStruct->trama = malloc(20 * sizeof(unsigned char));
+	memcpy(tramaStruct->trama, buf, 20* sizeof(unsigned char));
+	tramaStruct->size = 20;
+	for(int i = 0; i < 20; i++){
+		printf("FACK: %x\n", tramaStruct->trama[i]);
+	}
+	llwrite(serial_fd, tramaStruct);
 }
 
 struct tramaData * createDataPacket(int n){
@@ -190,7 +202,7 @@ void sendDataPacket() {
 
 	llwrite(serial_fd, buf);
 	turn = turn == 0 ? 1 : 0;
-					printf("merdou mesmo\n");
+	printf("merdou mesmo\n");
 
 	nSeq++;
 }
@@ -198,10 +210,11 @@ void sendDataPacket() {
 void verifyAnswer(int answer){
 	if(answer != turn){
 		printf("merdou outra vez\n");
+		return;
 	}
 	else{
 		printf("correu bem\n");
-		sendDataPacket();
+		//sendDataPacket();
 	}
 }
 
@@ -218,7 +231,8 @@ int startSender(char* fileName)
 		return 1;
 	}
 
-	sendDataPacket();
+	createFirstEndPacket(fdimage);
+	//sendDataPacket();
 	//llclose();
 	//close(fd);
 	return 0;
