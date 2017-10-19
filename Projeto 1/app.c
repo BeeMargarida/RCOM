@@ -21,12 +21,13 @@ int startReceiver()
 {
 	serial_fd = llopen(serial_id, RECEIVER);
 
-	int reading = 1;
-	char buf[512];
-	int first = 0;
+	int reading = TRUE;
+	unsigned char buf[512];
+	int first = FALSE;
 	while (reading)
 	{
 		int read = llread(serial_fd, buf);
+
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -35,19 +36,30 @@ int startReceiver()
 		if (read == 0)
 			continue;
 
-		if (buf[0] == DATA_START && first == 0)
+		printf("\nstartReceiver packet:\n");
+		printf("Packet size: %d\n", read);
+		for (int x = 0; x < read; x++)
+			printf("%c ", buf[x]);
+		printf("\n");
+
+		if (buf[0] == DATA_START && first == FALSE)
 		{
-			first = 1;
+			printf("Processing trama START\n");
+			first = TRUE;
 			unpackStartPacket(buf);
 
 		}
-		else if (buf[0] == DATA_END)
+		else if (buf[0] == DATA_END && first == TRUE)
 		{
+			printf("Processing trama END\n");
 			unpackEndPacket(buf);
-			reading = 0;
+			reading = FALSE;
 		}
-		else
+		else if (first == TRUE)
+		{
+			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
+		}
 	}
 
 	return llclose(serial_fd);

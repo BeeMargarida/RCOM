@@ -7,17 +7,16 @@ int serial_fd;
 
 int llread(int fd, char* buf)
 {
-	printf("In llread\n");
 	serial_fd = fd;
 
 	char* received = (char*)calloc(BUF_SIZE, sizeof(char));
 
 	int reading = TRUE;
 	int nread;
+	int i = 0;
 	while (reading)
 	{
-		nread = read(serial_fd, received, BUF_SIZE);
-		printf("Read %d bytes: %s\n", nread, received);
+		nread = read(serial_fd, received + i, BUF_SIZE);
 
 		if (nread < 0)
 		{
@@ -26,14 +25,15 @@ int llread(int fd, char* buf)
 		}
 		if (nread == 0){
 			reading = FALSE;
-			
-			int i = 0;
-			for(i; i < 10; i++){
-				printf("%x\n", received[i]);
-			}
+		/*	printf("Size: %d Trama:\n", i);
+			for (int a = 0; a < i; a++)
+				printf("%c", received[a]);
+			printf("\n");*/
 			processTram(received, buf);
 		}
+		i += nread;
 	}
+	return i;
 }
 
 int destuffing (unsigned char* tram, unsigned char* buf) {
