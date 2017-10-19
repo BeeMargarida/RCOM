@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <signal.h>
+#include "llread.h"
+#include "llwrite.h"
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -29,6 +31,11 @@ enum
 } types;
 
 
+/*typedef struct {
+	char *params;
+	int size;
+} control_packet_t;*/
+
 void receive_alarm();
 int create_alarm();
 int llopen(int fd, int type);
@@ -37,11 +44,9 @@ int llclose(int fd);
 //APP
 void writeDataStart(char* buf);
 void writeDataBlock(char* buf);
-int getfileSize();
-int getImageData(unsigned char* buf);
-void createTramaStartEnd(unsigned char *fsize, char *fname, int id);
-void createFirstEndPacket();
-struct tramaData * createDataPacket(int n);
-struct tramaData* getDataPacket(int f, int n);
+int getFileSize();
+int getImageData(unsigned char* buf, int fdimage);
+control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int id);
+control_packet_t createDataPacket(int fdimage, int nseq);
 
 #endif

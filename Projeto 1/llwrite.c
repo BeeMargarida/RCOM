@@ -1,8 +1,9 @@
 #include "llwrite.h"
 
-int tramaC1 = 0;
+int turn = 0;
+int tries = 0;
 
-int checkResponse(char* response){
+int checkResponse(unsigned char* response){
 
 }
 
@@ -10,7 +11,7 @@ int sendPacket() {
 
 }
 
-char* stuffingData(unsigned char * buf, int *size){
+unsigned char* stuffingData(unsigned char * buf, int *size){
 	int n = *size;
 	unsigned char *trama = malloc(512*sizeof(unsigned char));
 	int stuffing = 1;
@@ -44,38 +45,42 @@ char* stuffingData(unsigned char * buf, int *size){
 	return trama;
 }
 
-char* createTramaI(struct tramaData* buf){
-	char F = 0x7E;
-	char A = 0x03;
-	char C1 = (tramaC1 == 0 ? 0x00 : 0x40);
-	char BCC1 = A ^ C1;
-	char BCC2 = buf->trama[0];
-	for(int i = 1; i < buf->size; i++){
-		BCC2 ^= buf->trama[i];
+control_packet_t createTramaI(control_packet_t packet){
+	unsigned char F = 0x7E;
+	unsigned char A = 0x03;
+	unsigned char C1 = (turn == 0 ? 0x00 : 0x40);
+	unsigned char BCC1 = A ^ C1;
+	unsigned char BCC2 = packet.params[0];
+	printf("Size bitch%d\n", packet.size);
+	for(int i = 1; i < packet.size; i++){
+		BCC2 ^= packet.params[i];
 	}
-	struct tramaData *stuffedBuf = malloc(sizeof(struct tramaData));
-	stuffedBuf->size = buf->size;
-	//stuffedBuf->trama = malloc(512*sizeof(unsigned char));
-	stuffedBuf->trama = stuffingData(buf->trama, &stuffedBuf->size);
 
-	unsigned char* trama = malloc((7 + stuffedBuf->size) * sizeof(unsigned char));
+	control_packet_t stuffedPacket;
+	stuffedPacket.size = packet.size;
+	stuffedPacket.params = stuffingData(packet.params, &stuffedPacket.size);
+
+	unsigned char* trama = malloc((6 + stuffedPacket.size) * sizeof(unsigned char));
 	trama[0] = F; trama[1] = A; trama[2] = C1;
 	trama[3] = BCC1;
 
-	memcpy(trama + 4, stuffedBuf, stuffedBuf->size*sizeof(char));
-	trama[buf->size + 5 -1] = BCC2;
-	trama[buf->size + 6 -1] = F;
-/*
-	printf("FACK\n");
-	for(int i = 0; i < stuffedBuf->size + 7; i++){
-		printf("%x\n", trama[i]);
-	}*/
+	memcpy(trama + 4, stuffedPacket.params, stuffedPacket.size*sizeof(unsigned char));
+	trama[stuffedPacket.size + 5 -1] = BCC2;
+	trama[stuffedPacket.size + 6 -1] = F;
 
-	return trama;
+	control_packet_t packetI;
+	packetI.params = trama;
+	packetI.size = stuffedPacket.size + 6;
+
+	printf("FACK\n");
+	for(int i = 0; i < stuffedPacket.size + 6; i++){
+		printf("%x\n", packetI.params[i]);
+	}
+	return packetI;
 }
 
-void sendTrama(int serial_fd, unsigned char* buf){
-	int wrote = write(serial_fd, buf, 267);
+void sendTrama(int serial_fd, control_packet_t packet){
+	int wrote = write(serial_fd, packet.params, packet.size);
 	printf("Wrote %d bytes\n", wrote);
 }
 
@@ -123,11 +128,33 @@ int waitForAnswer(int serial_fd){
 	return 0;
 }
 
-int llwrite(int serial_fd, struct tramaData* buf) {
-	unsigned char *tramaI = createTramaI(buf);
-	tramaC1 = 1-tramaC1;
+int verifyAnswer(int answer){
+	if(answer != turn){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
 
-	sendTrama(serial_fd, tramaI);
+int llwrite(int serial_fd, control_packet_t packet) {
+	control_packet_t packetI = createTramaI(packet);
+	turn = 1 - turn;
+
+	sendTrama(serial_fd, packetI);
 	int i = waitForAnswer(serial_fd);
-	verifyAnswer(i);
+	if(verifyAnswer(i)){
+		printf("Tem erro na resposta\n");
+		if(tries < 4){
+			sendTrama(serial_fd, packetI);
+			tries++;
+		}
+		if(tries == 4){
+			return 1;
+		}
+	}
+	tries = 0;
+	printf("Correu bem\n");
+
+	return 0;
 }

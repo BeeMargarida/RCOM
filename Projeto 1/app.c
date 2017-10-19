@@ -1,18 +1,14 @@
 #include "data_link.h"
-#include "llread.h"
-#include "llwrite.h"
+
 
 int fileSize = 0;
-char* filename;
+unsigned char* filename;
 int fd = 0;
 int serial_fd = 0;
 int serial_id = 0;
 int lastCycle = 0;
-int fdimage = 0;
-
 int nSeq = 0; //is it right?
-
-int turn = 0;
+int fileDescriptor = 0;
 
 
 // RECEIVER
@@ -21,13 +17,12 @@ int startReceiver()
 {
 	serial_fd = llopen(serial_id, RECEIVER);
 
-	int reading = TRUE;
-	unsigned char buf[512];
-	int first = FALSE;
+	int reading = 1;
+	char buf[512];
+	int first = 0;
 	while (reading)
 	{
 		int read = llread(serial_fd, buf);
-
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -36,30 +31,19 @@ int startReceiver()
 		if (read == 0)
 			continue;
 
-		printf("\nstartReceiver packet:\n");
-		printf("Packet size: %d\n", read);
-		for (int x = 0; x < read; x++)
-			printf("%c ", buf[x]);
-		printf("\n");
-
-		if (buf[0] == DATA_START && first == FALSE)
+		if (buf[0] == DATA_START && first == 0)
 		{
-			printf("Processing trama START\n");
-			first = TRUE;
+			first = 1;
 			unpackStartPacket(buf);
 
 		}
-		else if (buf[0] == DATA_END && first == TRUE)
+		else if (buf[0] == DATA_END)
 		{
-			printf("Processing trama END\n");
 			unpackEndPacket(buf);
-			reading = FALSE;
+			reading = 0;
 		}
-		else if (first == TRUE)
-		{
-			printf("Processing trama DATA\n");
+		else
 			unpackDataPacket(buf);
-		}
 	}
 
 	return llclose(serial_fd);
@@ -97,8 +81,7 @@ void unpackStartPacket(char* buf)
 	}
 }
 
-void unpackDataPacket(char* buf)
-{
+void unpackDataPacket(char* buf){
 	int seqN = buf[1];
 	printf("Processing packet %d\n", seqN);
 	int n = 256 * buf[2] + buf[3];
@@ -107,8 +90,7 @@ void unpackDataPacket(char* buf)
 		write(fd, buf[i], 1);
 }
 
-void unpackEndPacket(char* buf)
-{
+void unpackEndPacket(char* buf){
 	printf("Last packet received\n");
 	return;
 }
@@ -116,70 +98,77 @@ void unpackEndPacket(char* buf)
 
 
 // SENDER
-int getfileSize() {
+
+
+
+
+/**************cenas fixes****************************/
+int getFileSize() {
 	struct stat st;
-	fstat(fdimage, &st);
-	fileSize = st.st_size;
+	fstat(fileDescriptor, &st);
+	return st.st_size;
+}
+
+control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int id) {
+	unsigned char size[4];
+	size[0] = (fsize >> 24) & 0xFF;
+	size[1] = (fsize >> 16) & 0xFF;
+	size[2] = (fsize >> 8) & 0xFF;
+	size[3] = fsize & 0xFF;
+
+	unsigned char C = id == 0  ? 0x02 : 0x03; //flag de start
+	unsigned char T1 = 0x00; //type = tamanho do ficheiro
+	unsigned char L1 = 0x04; //tamanho de V1
+	unsigned char T2 = 0x01; //type = nome do ficheiro
+	unsigned char L2 = strlen(fileName); //tamanho do nome pinguim.gif
+
+	unsigned char *packet = malloc((5+4+L2) * sizeof(unsigned char));
+	packet[0] = C; 
+	packet[1] = T1; 
+	packet[2] = L1;
+	memcpy(packet + 3, size, 4*sizeof(unsigned char));
+	packet[7] = T2;
+	packet[8] = L2;
+	memcpy(packet + 9, fileName, 11*sizeof(unsigned char));
+
+	printf("hello%s\n", packet);
+
+	control_packet_t controlPacket;
+	controlPacket.params = packet;
+	controlPacket.size = 9+L2;
+
+	return controlPacket;
+}
+
+int sendControlPacket(int SorR, int fsize, unsigned char *fname){
+	control_packet_t packet;
+	switch(SorR){
+		case 0: //start
+			packet = createFirstEndPacket(fsize, fname, SorR);
+			break;
+
+		case 1: //end
+			packet = createFirstEndPacket(fsize, fname, SorR);
+			break;
+	}
+	if(llwrite(serial_fd, packet)){
+		printf("erro a enviar pacote de controlo\n");
+		return -1;
+	}
+	printf("enviou o pacote de controlo corretamente\n");
 	return 0;
 }
 
-int getImageData(unsigned char* buf) {
-	int x = read(fdimage, buf, 256);
-	if(x < 0){
-		printf("Error reading the file");
-		return -1;
-	}
-	return x;
-}
-
-void createTramaStartEnd(unsigned char *fsize, char *fname, int id){
-	char C = id == 0  ? 0x02 : 0x03; //flag de start
-	char T1 = 0x00; //type = tamanho do ficheiro
-	char L1 = 0x04; //tamanho de V1
-	char T2 = 0x01; //type = nome do ficheiro
-	char L2 = 0x0B; //tamanho do nome pinguim.gif
-
-	unsigned char *trama = malloc(20 * sizeof(unsigned char));
-	trama[0] = C; trama[1] = T1; trama[2] = L1;
-	memcpy(trama + 3, fsize, 4*sizeof(unsigned char));
-	trama[7] = T2;
-	trama[8] = L2;
-	memcpy(trama + 9, fname, 11*sizeof(unsigned char));
-	sendStartEndPacket(trama);
-}
-
-void createFirstEndPacket() {
-	getfileSize();
-	unsigned char comp[4];
-	comp[0] = (fileSize >> 24) & 0xFF;
-	comp[1] = (fileSize >> 16) & 0xFF;
-	comp[2] = (fileSize >> 8) & 0xFF;
-	comp[3] = fileSize & 0xFF;
-	createTramaStartEnd(comp, filename, 0);
-	
-}
-
-void sendStartEndPacket(unsigned char *buf){
-	struct tramaData *tramaStruct = malloc(sizeof(struct tramaData));
-	tramaStruct->trama = malloc(20 * sizeof(unsigned char));
-	memcpy(tramaStruct->trama, buf, 20* sizeof(unsigned char));
-	tramaStruct->size = 20;
-	for(int i = 0; i < 20; i++){
-		printf("FACK: %x\n", tramaStruct->trama[i]);
-	}
-	llwrite(serial_fd, tramaStruct);
-}
-
-struct tramaData * createDataPacket(int n){
-	unsigned char imageBuf[512] = {};
-	int size = getImageData(imageBuf);
+control_packet_t createDataPacket(int fdimage, int nseq){
+	unsigned char imageBuf[256] = {};
+	int size = getImageData(imageBuf, fdimage);
 	if(size < 0){
-		return 0;
+		return ;
 	} else if(size < 256){
 		lastCycle = 1;
 	}
 	unsigned char C = 0x01;
-	unsigned char N = n;
+	unsigned char N = nseq;
 	unsigned char L2;
 	unsigned char L1;
 	if(size == 256){
@@ -189,63 +178,92 @@ struct tramaData * createDataPacket(int n){
 		L2 = 0x00;
 		L1 = size;
 	}
-	unsigned char *trama = malloc((4+size) * sizeof(unsigned char));
-	trama[0] = C;
-	trama[1] = N;
-	trama[2] = L2;
-	trama[3] = L1;
-	memcpy(trama+4, imageBuf, size * sizeof(unsigned char));
-	struct tramaData *td = malloc(sizeof(struct tramaData));
-	td->trama = trama;
-	td->size = size + 4;
+	unsigned char *temp = malloc((4+size) * sizeof(unsigned char));
+	temp[0] = C;
+	temp[1] = N;
+	temp[2] = L2;
+	temp[3] = L1;
+	memcpy(temp+4, imageBuf, size * sizeof(unsigned char));
 
-	return td;
+	printf("nao foi aqui\n");
+	control_packet_t packet;
+	packet.params = temp;
+	packet.size = size+4;
+
+	return packet;
 }
 
-struct tramaData * getDataPacket(int f, int n){
-	fd = f;
-	struct tramaData *td = createDataPacket(n);
-	return td;
-}
-
-void sendDataPacket() {
-	struct tramaData* buf = malloc(sizeof(struct tramaData));
-	buf = getDataPacket(fdimage, nSeq);
-
-	llwrite(serial_fd, buf);
-	turn = turn == 0 ? 1 : 0;
-	printf("merdou mesmo\n");
-
+control_packet_t sendDataPacket() {
 	nSeq++;
+	return (createDataPacket(fileDescriptor, nSeq));
 }
 
-void verifyAnswer(int answer){
-	if(answer != turn){
-		printf("merdou outra vez\n");
-		return;
+int getImageData(unsigned char* buf, int fdimage) {
+	int x = read(fdimage, buf, 256);
+	printf("Agora li: %d\n", x);
+	if(x < 0){
+		printf("Error reading the file");
+		return -1;
 	}
-	else{
-		printf("correu bem\n");
-		//sendDataPacket();
-	}
+	return x;
 }
 
-int startSender(char* fileName)
+int startSender(unsigned char* fileName)
 {
 	serial_fd = llopen(serial_id, SENDER);
 	
-	filename = malloc(sizeof(char) * strlen(fileName));
+	/*filename = malloc(sizeof(char) * strlen(fileName));
 	filename = fileName;
 	fdimage = open(filename, O_RDONLY);
 	if (fdimage < 0)
 	{
 		printf("Error: file %s does not exist\n", filename);
 		return 1;
+	}*/
+
+	fileDescriptor = open(fileName, O_RDONLY);
+	if(fileDescriptor < 0){
+		printf("Error opening file %s\n", fileName);
+		return -1;
 	}
 
-	createFirstEndPacket(fdimage);
-	//sendDataPacket();
+	int fsize = getFileSize();
+
+	//send start packet
+	if(sendControlPacket(0, fsize, fileName))
+		return -1;
+
+	//send data packet
+	while(!lastCycle){
+		control_packet_t packet	= sendDataPacket();
+		if(llwrite(serial_fd, packet)){
+			return -1;
+		}
+	}
+
+	//send end packet
+	if(sendControlPacket(1, fsize, fileName))
+		return -1;
 	//llclose();
 	//close(fd);
 	return 0;
 }
+
+
+
+
+/*
+int sendDataPacket(char * buf){
+	struct tramaData *packet = malloc(sizeof(struct tramaData));
+	packet->trama[0] = C;
+	packet->trama[1] = N;
+	packet->trama[2] = L2;
+	packet->trama[3] = L1;
+	memcpy(packet->trama+4, buf, 256*sizeof(char));
+	if(llwrite(serial_fd, packet)){
+		printf("erro a enviar o pacote de dados\n");
+		return -1;
+	}
+	printf("enviou o pacote de dados corretamente\n");
+	return 0;
+}*/

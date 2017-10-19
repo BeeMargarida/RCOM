@@ -66,7 +66,7 @@ int llopen(int serial, int type) {
 
     if(type == SENDER)
     {
-        char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
+        unsigned char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
         create_alarm();
         while(conta < 4 && flag == 1 )
         {
@@ -75,9 +75,9 @@ int llopen(int serial, int type) {
             flag = 0;
             alarm(3);
 
-            char res[5];
+            unsigned char res[5];
             int x;
-            char input;
+            unsigned char input;
             int currentIndex = 0;
             while (STOP==FALSE && flag == 0 )
             {       /* loop for input */

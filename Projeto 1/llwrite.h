@@ -15,7 +15,13 @@ struct tramaData
 	int size;
 };
 
-char* createTramaI(struct tramaData* buf);
-int llwrite(int serial_fd, struct tramaData* buf);
+
+typedef struct {
+	char *params;
+	int size;
+} control_packet_t;
+
+control_packet_t createTramaI(control_packet_t packet);
+int llwrite(int serial_fd, control_packet_t packet);
 
 #endif
