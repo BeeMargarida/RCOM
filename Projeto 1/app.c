@@ -8,6 +8,7 @@ int serial_id = 0;
 int lastCycle = 0;
 int nSeq = 0; //is it right?
 int fileDescriptor = 0;
+int cnt = 0;
 
 
 // RECEIVER
@@ -16,12 +17,13 @@ int startReceiver()
 	serial_fd = llopen(serial_id, RECEIVER);
 
 	int reading = TRUE;
-	unsigned char buf[512];
+	unsigned char* buf = calloc(BUF_SIZE, sizeof(unsigned char));
 	int first = FALSE;
 	while (reading)
-	{	
+	{
 		int read = llread(serial_fd, buf);
-		
+		cnt += read;
+
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -30,19 +32,13 @@ int startReceiver()
 		if (read == 0)
 			continue;
 
-		printf("\nstartReceiver packet:\n");
-		printf("Packet size: %d\n", read);
-		int x = 0;
-		for (x; x < read; x++)
-			printf(": %x ", buf[x]);
-		printf("\n");
+		printf("Start of data packet on startReceiver: %x\n", buf[0]);
 
 		if (buf[0] == DATA_START && first == FALSE)
 		{
 			printf("Processing trama START\n");
 			first = TRUE;
 			unpackStartPacket(buf);
-
 		}
 		else if (buf[0] == DATA_END && first == TRUE)
 		{
@@ -50,12 +46,18 @@ int startReceiver()
 			unpackEndPacket(buf);
 			reading = FALSE;
 		}
-		else if (first == TRUE)
+		else if (buf[0] == DATA_BLOCK && first == TRUE)
 		{
 			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
 		}
+		else
+		{
+			printf("Invalid trama\n");
+			cnt--;
+		}
 	}
+	printf("\ncnt = %d\n", cnt);
 	return llclose(serial_fd);
 }
 
@@ -98,9 +100,11 @@ void unpackDataPacket(unsigned char* buf)
 	printf("Processing packet %d\n", seqN);
 	int n = 256 * buf[2] + buf[3];
 	int i;
-	for (i = 4; i < n; i++){
-		write(fileDescriptor, buf[i], 1);
-	}
+	int x = write(fileDescriptor, buf + 4, n);
+	printf("Wrote %d bytes\n\n", x);
+/*	for (i = 4; i < n; i++)
+		printf("%c", buf[i]);
+	printf("\n");*/
 }
 
 void unpackEndPacket(char* buf)
@@ -137,8 +141,8 @@ control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int i
 	unsigned char L2 = strlen(fileName); //tamanho do nome pinguim.gif
 
 	unsigned char *packet = malloc((5+4+L2) * sizeof(unsigned char));
-	packet[0] = C; 
-	packet[1] = T1; 
+	packet[0] = C;
+	packet[1] = T1;
 	packet[2] = L1;
 	memcpy(packet + 3, size, 4*sizeof(unsigned char));
 	packet[7] = T2;
@@ -225,7 +229,7 @@ int getImageData(unsigned char* buf, int fdimage) {
 int startSender(unsigned char* fileName)
 {
 	serial_fd = llopen(serial_id, SENDER);
-	
+
 	/*filename = malloc(sizeof(char) * strlen(fileName));
 	filename = fileName;
 	fdimage = open(filename, O_RDONLY);

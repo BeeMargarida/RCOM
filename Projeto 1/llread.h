@@ -9,10 +9,10 @@
 
 #define FALSE 0
 #define TRUE 1
-#define BUF_SIZE 512
+#define BUF_SIZE 256
 
 int generateBCC(char* buf, int size);
-void processTram(unsigned char* tram, unsigned char* buf);
+void processTram(unsigned char* tram, unsigned char* buf, int size);
 void sendRR();
 void sendREJ();
 int llread(int fd, char* buf);
