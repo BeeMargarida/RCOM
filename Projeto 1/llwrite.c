@@ -2,14 +2,7 @@
 
 int turn = 0;
 int tries = 0;
-
-int checkResponse(unsigned char* response){
-
-}
-
-int sendPacket() {
-
-}
+int numPacket = 0;
 
 unsigned char* stuffingData(unsigned char * buf, int *size){
 	int n = *size;
@@ -37,11 +30,7 @@ unsigned char* stuffingData(unsigned char * buf, int *size){
 
 		if (i == n)
 			stuffing = 0;
-	}/*
-	for(int i = 0; i < *size; i++){
-		printf("%x\n", trama[i]);
-	}*/
-
+	}
 	return trama;
 }
 
@@ -76,52 +65,72 @@ control_packet_t createTramaI(control_packet_t packet){
 }
 
 void sendTrama(int serial_fd, control_packet_t packet){
+	int i = 0;
+	printf("Num PACKET: %d", numPacket);
+	for(i; i < packet.size; i++){
+		printf("%x ", packet.params[i]);
+	}
 	int wrote = write(serial_fd, packet.params, packet.size);
+	numPacket++;
 	printf("Wrote %d bytes\n", wrote);
 }
 
 int waitForAnswer(int serial_fd){
 	int reading = TRUE;
 	int nread;
-	unsigned char rr[5] = {0x7e, 0x03, 0x05, 0x01, 0x7e};
-	unsigned char rej[5] = {0x7e, 0x03, 0x05, 0x01, 0x7e};
+	
+	unsigned char rr[5] = {0x7e, 0x03, 0x01 , 0x01, 0x7e};
+	unsigned char rej[5] = {0x7e, 0x03, 0x01, 0x01, 0x7e};
+	rr[2] = (turn == 0 ? 0x05 : 0x85);
+	rej[2] = (turn == 0 ? 0x01 : 0x81);
 
 	unsigned char answer[5] = {};
 	while (reading)
 	{
 		nread = read(serial_fd, answer, 5);
-		printf("Read %d bytes\n", nread);
+		printf("ANSWER:\n", nread);
+		int i = 0;
+		for(i; i < nread; i++){
+			printf("%x : ", answer[i]);
+		}
 
 		if (nread < 0)
 		{
 			printf("Error reading answer");
 			return 1;
 		}
-		int i = 0; 
-		for(i; i < nread; i++){
-			printf("%x\n", answer[i]);
-			if(answer[i] != rr[i]){
-				printf("deu merda\n");
-				break;
+		if(answer[0] == 0x7E){
+			if((answer[1] ^ answer[2]) != answer[3]){
+				printf("O bcc tem erro\n");
+				//return - 1;
+			}
+			if(answer[2] == 0x05 && turn == 0){
+				printf("All went well\n");
+				return 1;
+			}
+			else if(answer[2] == 0x85 && turn == 1){
+				printf("All went well\n");
+				return 1;
+			}
+			else if(answer[2] == 0x01 && turn == 0){
+				printf("Packet must be resent\n");
+				return 0;
+			}
+			else if(answer[2] == 0x81 && turn == 1){
+				printf("Packet must be resent\n");
+				return 0;
+			}
+			else {
+				//printf("Wrong turn number\n");
+				return 1; // ?
 			}
 		}
-		if(i < 5){
-			for(i = 0; i < nread; i++){
-				if(answer[i] != rej[i]){
-					printf("merdou mesmo\n");
-					reading = FALSE; //return error
-					break;
-				}
-			}
-		}
-		if(i == 5){
-			printf("esta fixe\n");
-			reading = FALSE;
-			break;
+		else {
+			return 0;
 		}
 	}
 	//return 1 ou 0 consoante o "turno"
-	return 0;
+	return 1;
 }
 
 int verifyAnswer(int answer){
@@ -138,9 +147,8 @@ int llwrite(int serial_fd, control_packet_t packet) {
 	turn = 1 - turn;
 
 	sendTrama(serial_fd, packetI);
-	int i = waitForAnswer(serial_fd);
-	if(verifyAnswer(i)){
-		printf("Tem erro na resposta\n");
+	//int i = waitForAnswer(serial_fd);
+	if(waitForAnswer(serial_fd)/*verifyAnswer(i)*/){
 		if(tries < 4){
 			sendTrama(serial_fd, packetI);
 			tries++;
@@ -150,7 +158,6 @@ int llwrite(int serial_fd, control_packet_t packet) {
 		}
 	}
 	tries = 0;
-	printf("Correu bem\n");
 
 	return 0;
 }

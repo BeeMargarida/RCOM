@@ -31,11 +31,6 @@ enum
 } types;
 
 
-/*typedef struct {
-	char *params;
-	int size;
-} control_packet_t;*/
-
 void receive_alarm();
 int create_alarm();
 int llopen(int fd, int type);

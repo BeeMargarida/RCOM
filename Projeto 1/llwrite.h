@@ -9,15 +9,9 @@
 
 #define FALSE 0
 #define TRUE 1
-struct tramaData
-{
-	char * trama;
-	int size;
-};
-
 
 typedef struct {
-	char *params;
+	unsigned char *params;
 	int size;
 } control_packet_t;
 

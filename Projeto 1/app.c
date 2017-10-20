@@ -149,8 +149,6 @@ control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int i
 	packet[8] = L2;
 	memcpy(packet + 9, fileName, 11*sizeof(unsigned char));
 
-	printf("hello%s\n", packet);
-
 	control_packet_t controlPacket;
 	controlPacket.params = packet;
 	controlPacket.size = 9+L2;
@@ -230,15 +228,6 @@ int startSender(unsigned char* fileName)
 {
 	serial_fd = llopen(serial_id, SENDER);
 
-	/*filename = malloc(sizeof(char) * strlen(fileName));
-	filename = fileName;
-	fdimage = open(filename, O_RDONLY);
-	if (fdimage < 0)
-	{
-		printf("Error: file %s does not exist\n", filename);
-		return 1;
-	}*/
-
 	fileDescriptor = open(fileName, O_RDONLY);
 	if(fileDescriptor < 0){
 		printf("Error opening file %s\n", fileName);
@@ -266,22 +255,3 @@ int startSender(unsigned char* fileName)
 	//close(fd);
 	return 0;
 }
-
-
-
-
-/*
-int sendDataPacket(char * buf){
-	struct tramaData *packet = malloc(sizeof(struct tramaData));
-	packet->trama[0] = C;
-	packet->trama[1] = N;
-	packet->trama[2] = L2;
-	packet->trama[3] = L1;
-	memcpy(packet->trama+4, buf, 256*sizeof(char));
-	if(llwrite(serial_fd, packet)){
-		printf("erro a enviar o pacote de dados\n");
-		return -1;
-	}
-	printf("enviou o pacote de dados corretamente\n");
-	return 0;
-}*/

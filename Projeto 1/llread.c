@@ -4,7 +4,7 @@
 
 unsigned char* lastData[BUF_SIZE];
 int serial_fd;
-int turn = 0;
+int turnPacket = 0;
 /*
 int find7E(unsigned char* array, int size)
 {
@@ -127,7 +127,15 @@ void processTram(unsigned char* tram, unsigned char* buf, int size)
 		return;
 	}
 
-	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
+	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
+		sendRR();
+		turnPacket = ~turnPacket;
+	}
+	else {
+		sendREJ();
+	}
+
+	/*int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
 
 	if (isNew)
 	{
@@ -139,7 +147,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size)
 	{
 		buf = NULL;
 		sendRR();
-	}
+	}*/
 }
 
 int generateBCC(char* buf, int size)
@@ -153,8 +161,9 @@ int generateBCC(char* buf, int size)
 
 void sendREJ()
 {
-	printf("Sending REJ\n");
 	char rej[] = { 0x7E, 0x03, 0x01, 0x03, 0x7E };
+	rej[2] = (turnPacket == 0 ? 0x01 : 0x81);
+	rej[3] = rej[1] ^ rej[2];
 	int n = write(serial_fd, rej, 5);
 	if (n < 0)
 		perror("Failed to write to serial port in sendREJ\n");
@@ -162,8 +171,9 @@ void sendREJ()
 
 void sendRR()
 {
-	printf("Sending RR\n");
 	char rr[] = { 0x7E, 0x03, 0x05, 0xF3, 0x7E };
+	rr[2] = (turnPacket == 0 ? 0x05 : 0x85);
+	rr[3] = rr[1] ^ rr[2];
 	int n = write(serial_fd, rr, 5);
 	if (n < 0)
 		perror("Failed to write to serial port in sendRR\n");
