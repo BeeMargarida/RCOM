@@ -85,54 +85,57 @@ int waitForAnswer(int serial_fd){
 	rej[2] = (turn == 0 ? 0x01 : 0x81);
 
 	unsigned char answer[5] = {};
+	int i = 0;
 	while (reading)
 	{
-		nread = read(serial_fd, answer, 5);
-		printf("ANSWER:\n", nread);
-		int i = 0;
-		for(i; i < nread; i++){
-			printf("%x : ", answer[i]);
-		}
-
+		nread = read(serial_fd, answer + i, 1);
 		if (nread < 0)
 		{
 			printf("Error reading answer");
 			return 1;
 		}
-		if(answer[0] == 0x7E){
+		if(i != 0 && answer[i] == 0x7E){
+			printf("ANSWER: \n");
+			int j = 0;
+			for(j; j < nread; j++){
+				printf("%x : ", answer[j]);
+			}
+			printf("\n");
+			reading = FALSE;
 			if((answer[1] ^ answer[2]) != answer[3]){
 				printf("O bcc tem erro\n");
-				//return - 1;
+				return 1;
 			}
 			if(answer[2] == 0x05 && turn == 0){
 				printf("All went well\n");
-				return 1;
+				return 0;
 			}
 			else if(answer[2] == 0x85 && turn == 1){
 				printf("All went well\n");
-				return 1;
+				return 0;
 			}
 			else if(answer[2] == 0x01 && turn == 0){
 				printf("Packet must be resent\n");
-				return 0;
+				return 1;
 			}
 			else if(answer[2] == 0x81 && turn == 1){
 				printf("Packet must be resent\n");
-				return 0;
+				return 1;
 			}
 			else {
 				//printf("Wrong turn number\n");
-				return 1; // ?
+				return 0; // ?
 			}
 		}
 		else {
-			return 0;
+			return 1;
 		}
+		i += nread;
 	}
 	//return 1 ou 0 consoante o "turno"
 	return 1;
 }
-
+/*
 int verifyAnswer(int answer){
 	if(answer != turn){
 		return 1;
@@ -140,7 +143,7 @@ int verifyAnswer(int answer){
 	else{
 		return 0;
 	}
-}
+}*/
 
 int llwrite(int serial_fd, control_packet_t packet) {
 	control_packet_t packetI = createTramaI(packet);
