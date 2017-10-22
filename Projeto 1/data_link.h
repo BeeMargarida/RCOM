@@ -12,6 +12,7 @@
 #include "llread.h"
 #include "llwrite.h"
 
+
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -31,14 +32,15 @@ enum
 } types;
 
 
+
 void receive_alarm();
 int create_alarm();
 int llopen(int fd, int type);
 int llclose(int fd);
 
 //APP
-void writeDataStart(char* buf);
-void writeDataBlock(char* buf);
+void writeDataStart(unsigned char* buf);
+void writeDataBlock(unsigned char* buf);
 int getFileSize();
 int getImageData(unsigned char* buf, int fdimage);
 control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int id);

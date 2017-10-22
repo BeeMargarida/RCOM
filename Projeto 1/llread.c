@@ -1,8 +1,5 @@
 #include "llread.h"
-#include <stdlib.h>
-#include <string.h>
 
-unsigned char* lastData[BUF_SIZE];
 int serial_fd;
 int turnPacket = 0;
 /*
@@ -48,7 +45,8 @@ for (int j = 0; j < currIndex; j++)
 	return trama;
 }*/
 
-int llread(int fd, char* buf)
+
+int llread(int fd, unsigned char* buf, int* duplicate)
 {
 	serial_fd = fd;
 
@@ -68,7 +66,13 @@ int llread(int fd, char* buf)
 		}
 		if (i != 0 && buffer[i] == 0x7E){
 			reading = FALSE;
-			processTram(buffer, buf, i);
+			/*printf("FACK\n");
+			/nt j = 0;
+			for(j; j < i; j++){
+				printf("%x : ", buffer[j]);
+			}
+			printf("\n");*/
+			processTram(buffer, buf, i, duplicate);
 		}
 		i += nread;
 	}
@@ -77,7 +81,7 @@ int llread(int fd, char* buf)
 	return i;
 }
 
-int destuffing (unsigned char* tram, unsigned char* buf, int size) {
+int destuffing (unsigned char* tram, unsigned char* buf, int size) { //tirar o size daqui
 	int destuffing = 1;
 	int i = 4, j = 0;
 	while(destuffing){
@@ -86,7 +90,7 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) {
 		if(tram[i] == 0x7E){
 			destuffing = 0;
 			buf[j] = tram[i];
-			break;
+			return j;
 		}
 		else if(tram[i] == 0x7D & tram[i + 1] == 0x5E){
 			buf[j] = 0x7E;
@@ -107,8 +111,17 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) {
 	return j;
 }
 
-void processTram(unsigned char* tram, unsigned char* buf, int size)
+void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplicate)
 {
+	/*if(first == 1){
+		int i = 0;
+		for(i; i < size - 1; i++){
+			printf("%x : ", tram[i]);
+		}
+		first++;
+	}
+	first++;
+	printf("\n");*/
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
@@ -118,7 +131,6 @@ void processTram(unsigned char* tram, unsigned char* buf, int size)
 	char bcc2;
 
 	int j = destuffing(tram, buf, size);
-
 	int check = generateBCC(buf, j);
 
 	if (bcc2 != check)
@@ -131,26 +143,16 @@ void processTram(unsigned char* tram, unsigned char* buf, int size)
 		sendRR();
 		turnPacket = ~turnPacket;
 	}
+	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
+		sendRR();
+		*duplicate = 1;
+	}
 	else {
 		sendREJ();
 	}
-
-	/*int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
-
-	if (isNew)
-	{
-		turn = ~turn;
-		sendRR();
-		memcpy(lastData, buf, j - 1);
-	}
-	else
-	{
-		buf = NULL;
-		sendRR();
-	}*/
 }
 
-int generateBCC(char* buf, int size)
+int generateBCC(unsigned char* buf, int size)
 {
 	char bcc = buf[0];
 	int i;
@@ -161,7 +163,7 @@ int generateBCC(char* buf, int size)
 
 void sendREJ()
 {
-	char rej[] = { 0x7E, 0x03, 0x01, 0x03, 0x7E };
+	unsigned char rej[] = { 0x7E, 0x03, 0x01, 0x03, 0x7E };
 	rej[2] = (turnPacket == 0 ? 0x01 : 0x81);
 	rej[3] = rej[1] ^ rej[2];
 	int n = write(serial_fd, rej, 5);
@@ -171,7 +173,7 @@ void sendREJ()
 
 void sendRR()
 {
-	char rr[] = { 0x7E, 0x03, 0x05, 0xF3, 0x7E };
+	unsigned char rr[] = { 0x7E, 0x03, 0x05, 0xF3, 0x7E };
 	rr[2] = (turnPacket == 0 ? 0x05 : 0x85);
 	rr[3] = rr[1] ^ rr[2];
 	int n = write(serial_fd, rr, 5);

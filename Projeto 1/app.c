@@ -1,6 +1,5 @@
 #include "data_link.h"
 
-
 int fileSize = 0;
 unsigned char* filename;
 int serial_fd = 0;
@@ -19,9 +18,10 @@ int startReceiver()
 	int reading = TRUE;
 	unsigned char* buf = calloc(BUF_SIZE, sizeof(unsigned char));
 	int first = FALSE;
+	int* duplicate = calloc(1, sizeof(int));
 	while (reading)
 	{
-		int read = llread(serial_fd, buf);
+		int read = llread(serial_fd, buf, duplicate);
 		cnt += read;
 
 		if (read < 0)
@@ -33,7 +33,6 @@ int startReceiver()
 			continue;
 
 		printf("Start of data packet on startReceiver: %x\n", buf[0]);
-
 		if (buf[0] == DATA_START && first == FALSE)
 		{
 			printf("Processing trama START\n");
@@ -47,7 +46,11 @@ int startReceiver()
 			reading = FALSE;
 		}
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
-		{
+		{	
+			if(*duplicate){
+				*duplicate = 0;
+				continue;
+			}
 			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
 		}
@@ -94,6 +97,8 @@ void unpackStartPacket(unsigned char* buf)
 	}
 }
 
+int first = 0;
+
 void unpackDataPacket(unsigned char* buf)
 {
 	int seqN = buf[1];
@@ -101,15 +106,21 @@ void unpackDataPacket(unsigned char* buf)
 	int n = 256 * buf[2] + buf[3];
 	int i;
 	int x = write(fileDescriptor, buf + 4, n);
+	
 	printf("Wrote %d bytes\n\n", x);
-/*	for (i = 4; i < n; i++)
-		printf("%c", buf[i]);
-	printf("\n");*/
+	/*if(first == 1){
+	for (i = 4; i < n + 6; i++)
+		printf("%x : ", buf[i]);
+	printf("\n");
+	first++;
+	}
+	first++;*/
 }
 
-void unpackEndPacket(char* buf)
+void unpackEndPacket(unsigned char* buf)
 {
 	printf("Last packet received\n");
+	//close(fileDescriptor);
 	return;
 }
 

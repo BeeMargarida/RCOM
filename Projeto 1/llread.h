@@ -6,15 +6,17 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <signal.h>
+#include <string.h>
 
 #define FALSE 0
 #define TRUE 1
 #define BUF_SIZE 256
 
-int generateBCC(char* buf, int size);
-void processTram(unsigned char* tram, unsigned char* buf, int size);
+
+int generateBCC(unsigned char* buf, int size);
+void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplicate);
 void sendRR();
 void sendREJ();
-int llread(int fd, char* buf);
+int llread(int fd, unsigned char* buf, int* duplicate);
 
 #endif
