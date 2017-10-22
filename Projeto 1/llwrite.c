@@ -3,7 +3,9 @@
 int turn = 0;
 int tries = 0;
 int numPacket = 0;
+int first = 0;
 
+//isto funciona bem
 unsigned char* stuffingData(unsigned char * buf, int *size){
 	int n = *size;
 	unsigned char *trama = malloc(512*sizeof(unsigned char));
@@ -27,13 +29,13 @@ unsigned char* stuffingData(unsigned char * buf, int *size){
 			j++;
 		}
 		i++;
-
 		if (i == n)
 			stuffing = 0;
 	}
 	return trama;
 }
 
+//isto funciona bem
 control_packet_t createTramaI(control_packet_t packet){
 	unsigned char F = 0x7E;
 	unsigned char A = 0x03;
@@ -45,36 +47,37 @@ control_packet_t createTramaI(control_packet_t packet){
 		BCC2 ^= packet.params[i];
 	}
 
-	control_packet_t stuffedPacket;
-	stuffedPacket.size = packet.size;
-	stuffedPacket.params = stuffingData(packet.params, &stuffedPacket.size);
+	int stuffedSize = packet.size;
+	printf("FODA-SE: %d\n",stuffedSize);
+	unsigned char * stuffedPacket = stuffingData(packet.params, &stuffedSize);
 
-	unsigned char* trama = malloc((6 + stuffedPacket.size) * sizeof(unsigned char));
-	trama[0] = F; trama[1] = A; trama[2] = C1;
-	trama[3] = BCC1;
-
-	memcpy(trama + 4, stuffedPacket.params, stuffedPacket.size*sizeof(unsigned char));
-	trama[stuffedPacket.size + 5 -1] = BCC2;
-	trama[stuffedPacket.size + 6 -1] = F;
+	unsigned char* trama = malloc((6 + stuffedSize) * sizeof(unsigned char));
+	trama[0] = F; trama[1] = A; trama[2] = C1; trama[3] = BCC1;
+	memcpy(trama + 4, stuffedPacket, stuffedSize*sizeof(unsigned char));
+	trama[stuffedSize + 5 - 1] = BCC2;
+	trama[stuffedSize + 6 - 1] = F;
 
 	control_packet_t packetI;
 	packetI.params = trama;
-	packetI.size = stuffedPacket.size + 6;
+	packetI.size = stuffedSize + 6;
+
+	int j = 0;
+	for(j; j < packetI.size + 5; j++){
+		printf("%x : ", packetI.params[j]);
+	}
+	printf("\n");
 
 	return packetI;
 }
 
+//isto funciona bem
 void sendTrama(int serial_fd, control_packet_t packet){
 	int i = 0;
-	printf("Num PACKET: %d", numPacket);
-	for(i; i < packet.size; i++){
-		printf("%x ", packet.params[i]);
-	}
 	int wrote = write(serial_fd, packet.params, packet.size);
 	numPacket++;
-	printf("Wrote %d bytes\n", wrote);
 }
 
+//isto se calhar nao
 int waitForAnswer(int serial_fd){
 	int reading = TRUE;
 	int nread;
@@ -86,77 +89,54 @@ int waitForAnswer(int serial_fd){
 
 	unsigned char answer[5] = {};
 	int i = 0;
-	while (reading)
+
+	nread = read(serial_fd, answer, 5);
+	if (nread < 0)
 	{
-		nread = read(serial_fd, answer + i, 1);
-		if (nread < 0)
-		{
-			printf("Error reading answer");
-			return 1;
-		}
-		if(i != 0 && answer[i] == 0x7E){
-			printf("ANSWER: \n");
-			int j = 0;
-			for(j; j < nread; j++){
-				printf("%x : ", answer[j]);
-			}
-			printf("\n");
-			reading = FALSE;
-			if((answer[1] ^ answer[2]) != answer[3]){
-				printf("O bcc tem erro\n");
-				return 1;
-			}
-			if(answer[2] == 0x05 && turn == 0){
-				printf("All went well\n");
-				return 0;
-			}
-			else if(answer[2] == 0x85 && turn == 1){
-				printf("All went well\n");
-				return 0;
-			}
-			else if(answer[2] == 0x01 && turn == 0){
-				printf("Packet must be resent\n");
-				return 1;
-			}
-			else if(answer[2] == 0x81 && turn == 1){
-				printf("Packet must be resent\n");
-				return 1;
-			}
-			else {
-				//printf("Wrong turn number\n");
-				return 0; // ?
-			}
-		}
-		else {
-			return 1;
-		}
-		i += nread;
+		printf("Error reading answer");
+		return 1;
 	}
-	//return 1 ou 0 consoante o "turno"
-	return 1;
-}
-/*
-int verifyAnswer(int answer){
-	if(answer != turn){
+	/*for(int j = 0; j < 5; j++)
+		printf("%x\n", answer[j]);*/
+
+
+	if(answer[3] != answer[1]^answer[2]){
+		//printf("Bcc de merda\n");
+		return 1;
+	}
+	if(answer[0] != 0x7e || answer[4] != 0x7e){
+		//printf("inicio ou fim de merda\n");
+		return 1;
+	}
+	if((answer[2] == 0x05 && turn == 0) || (answer[2] == 0x85 && turn == 1)){
+		//printf("Fixe\n");
+		return 0;
+	}
+	else if((answer[2] == 0x01 && turn == 0) || (answer[2] == 0x81 && turn == 1)){
+		//printf("Reenvia\n");
 		return 1;
 	}
 	else{
-		return 0;
+		//printf("turno de merda\n");
+		return 1;
 	}
-}*/
+}
 
 int llwrite(int serial_fd, control_packet_t packet) {
 	control_packet_t packetI = createTramaI(packet);
 	turn = 1 - turn;
 
-	sendTrama(serial_fd, packetI);
-	//int i = waitForAnswer(serial_fd);
-	if(waitForAnswer(serial_fd)/*verifyAnswer(i)*/){
+	//sendTrama(serial_fd, packetI);
+
+	if(waitForAnswer(serial_fd) || first == 0){
+		printf("HALO\n");
+		first = 1;
 		if(tries < 4){
 			sendTrama(serial_fd, packetI);
 			tries++;
 		}
 		if(tries == 4){
+			tries = 0;
 			return 1;
 		}
 	}
