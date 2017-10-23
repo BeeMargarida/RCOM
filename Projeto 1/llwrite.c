@@ -47,22 +47,24 @@ control_packet_t createTramaI(control_packet_t packet){
 		BCC2 ^= packet.params[i];
 	}
 
-	int stuffedSize = packet.size;
-	printf("FODA-SE: %d\n",stuffedSize);
-	unsigned char * stuffedPacket = stuffingData(packet.params, &stuffedSize);
+	int stuffedSize = packet.size + 1;
+	unsigned char * notStuffedPacket = malloc((1 + packet.size) * sizeof(unsigned char));
+	memcpy(notStuffedPacket, packet.params, packet.size*sizeof(unsigned char));
+	notStuffedPacket[packet.size] = BCC2;
+	unsigned char * stuffedPacket = stuffingData(notStuffedPacket, &stuffedSize);
 
-	unsigned char* trama = malloc((6 + stuffedSize) * sizeof(unsigned char));
+	unsigned char* trama = malloc((5 + stuffedSize) * sizeof(unsigned char));
 	trama[0] = F; trama[1] = A; trama[2] = C1; trama[3] = BCC1;
 	memcpy(trama + 4, stuffedPacket, stuffedSize*sizeof(unsigned char));
-	trama[stuffedSize + 5 - 1] = BCC2;
-	trama[stuffedSize + 6 - 1] = F;
+	trama[stuffedSize + 4 - 1] = BCC2;
+	trama[stuffedSize + 5 - 1] = F;
 
 	control_packet_t packetI;
 	packetI.params = trama;
 	packetI.size = stuffedSize + 6;
 
 	int j = 0;
-	for(j; j < packetI.size + 5; j++){
+	for(j; j < packetI.size; j++){
 		printf("%x : ", packetI.params[j]);
 	}
 	printf("\n");
@@ -73,8 +75,26 @@ control_packet_t createTramaI(control_packet_t packet){
 //isto funciona bem
 void sendTrama(int serial_fd, control_packet_t packet){
 	int i = 0;
-	int wrote = write(serial_fd, packet.params, packet.size);
+	int counter = 0;/*
+	int wrote = write(serial_fd, packet.params, packet.size);*/
+	int not7E = TRUE;
+	while(not7E)
+	{
+		int read = write(serial_fd, packet.params + i, 1);
+		if (read == 1)
+		{
+			if (packet.params[i] == 0x7E && i > 0)
+			{
+				printf("Found 7e\n");
+				not7E = FALSE;
+			}
+			i++;
+			counter++;
+		}
+	}
+	printf("\n");
 	numPacket++;
+	printf("Wrote %d bytes\n", counter);
 }
 
 //isto se calhar nao
@@ -99,21 +119,20 @@ int waitForAnswer(int serial_fd){
 	/*for(int j = 0; j < 5; j++)
 		printf("%x\n", answer[j]);*/
 
-
 	if(answer[3] != answer[1]^answer[2]){
-		//printf("Bcc de merda\n");
+		printf("Bcc de merda\n");
 		return 1;
 	}
 	if(answer[0] != 0x7e || answer[4] != 0x7e){
-		//printf("inicio ou fim de merda\n");
+		printf("inicio ou fim de merda\n");
 		return 1;
 	}
 	if((answer[2] == 0x05 && turn == 0) || (answer[2] == 0x85 && turn == 1)){
-		//printf("Fixe\n");
+		printf("Fixe\n");
 		return 0;
 	}
 	else if((answer[2] == 0x01 && turn == 0) || (answer[2] == 0x81 && turn == 1)){
-		//printf("Reenvia\n");
+		printf("Reenvia\n");
 		return 1;
 	}
 	else{
@@ -128,8 +147,21 @@ int llwrite(int serial_fd, control_packet_t packet) {
 
 	//sendTrama(serial_fd, packetI);
 
+	int cycle = TRUE;
+	while(cycle){
+		sendTrama(serial_fd, packetI);
+		if(first == 0){
+			cycle = FALSE;
+			first = 1;
+			break;
+		}
+		if(!waitForAnswer(serial_fd)){
+			cycle = FALSE;
+		}
+	}
+/*
 	if(waitForAnswer(serial_fd) || first == 0){
-		printf("HALO\n");
+		sendTrama(serial_fd, packetI);
 		first = 1;
 		if(tries < 4){
 			sendTrama(serial_fd, packetI);
@@ -140,7 +172,7 @@ int llwrite(int serial_fd, control_packet_t packet) {
 			return 1;
 		}
 	}
-	tries = 0;
+	tries = 0;*/
 
 	return 0;
 }
