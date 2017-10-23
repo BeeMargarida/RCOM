@@ -2,49 +2,6 @@
 
 int serial_fd;
 int turnPacket = 0;
-/*
-int find7E(unsigned char* array, int size)
-{
-	int i;
-	for (i = 1; i < size; i++)
-	{
-		if (array[i] == 0x7E)
-			return TRUE;
-	}
-	return FALSE;
-}
-
-unsigned char* divideBuffers(int length)
-{
-	unsigned char* trama = calloc(BUF_SIZE, sizeof(unsigned char));
-	trama[0] = buffer[0];
-
-	printf("ok");
-	int notFound7E = TRUE;
-	int i = 1;
-	while (notFound7E)
-	{
-		trama[i] = buffer[i];
-		if (trama[i] == 0x7E)
-			notFound7E = FALSE;
-		i++;
-	}*/
-/*
-	printf("Trama: ");
-	for (int j = 0; j < i; j++)
-		printf("%x ", trama[j]);*/
-/*
-	currIndex = length - i - 1;
-	memcpy(buffer, buffer + i, currIndex);
-/*
-printf("\nResto: ");
-for (int j = 0; j < currIndex; j++)
-	printf("%x ", buffer[j]);*/
-/*
-	printf("trama[0] = %d\n", trama[0]);
-	return trama;
-}*/
-
 
 int llread(int fd, unsigned char* buf, int* duplicate)
 {
@@ -56,15 +13,18 @@ int llread(int fd, unsigned char* buf, int* duplicate)
 	int nread;
 	unsigned char* buffer = calloc(BUF_SIZE, sizeof(unsigned char));
 	int i = 0;
+	int found7E = 0;
 	while (reading)
 	{
 		nread = read(serial_fd, buffer + i, 1);
+		if(i == 0 && buffer[i] == 0x7E)
+			found7E = 1;
 		if (nread < 0)
 		{
 			printf("Error reading from serial port on llread");
 			return 1;
 		}
-		if (i != 0 && buffer[i] == 0x7E){
+		if (found7E && i != 0 && buffer[i] == 0x7E){
 			reading = FALSE;
 			/*printf("FACK\n");
 			/nt j = 0;
@@ -74,7 +34,8 @@ int llread(int fd, unsigned char* buf, int* duplicate)
 			printf("\n");*/
 			processTram(buffer, buf, i, duplicate);
 		}
-		i += nread;
+		if(found7E)
+			i += nread;
 	}
 	//memset(received, 0, i);
 	printf("Read = %d\n", i);
@@ -125,6 +86,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
+		buf = NULL;
 		sendREJ();
 		return;
 	}
@@ -135,6 +97,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 
 	if (bcc2 != check)
 	{
+		buf = NULL;
 		sendREJ();
 		return;
 	}
@@ -148,6 +111,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 		*duplicate = 1;
 	}
 	else {
+		buf = NULL;
 		sendREJ();
 	}
 }

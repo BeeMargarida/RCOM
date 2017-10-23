@@ -23,7 +23,9 @@ int startReceiver()
 	{
 		int read = llread(serial_fd, buf, duplicate);
 		cnt += read;
-
+		if(buf == NULL){
+			continue;
+		}
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -46,7 +48,7 @@ int startReceiver()
 			reading = FALSE;
 		}
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
-		{	
+		{
 			if(*duplicate){
 				*duplicate = 0;
 				continue;
@@ -97,7 +99,6 @@ void unpackStartPacket(unsigned char* buf)
 	}
 }
 
-int first = 0;
 
 void unpackDataPacket(unsigned char* buf)
 {
@@ -106,7 +107,7 @@ void unpackDataPacket(unsigned char* buf)
 	int n = 256 * buf[2] + buf[3];
 	int i;
 	int x = write(fileDescriptor, buf + 4, n);
-	
+
 	printf("Wrote %d bytes\n\n", x);
 	/*if(first == 1){
 	for (i = 4; i < n + 6; i++)
@@ -212,7 +213,6 @@ control_packet_t createDataPacket(int fdimage, int nseq){
 	temp[3] = L1;
 	memcpy(temp+4, imageBuf, size * sizeof(unsigned char));
 
-	printf("nao foi aqui\n");
 	control_packet_t packet;
 	packet.params = temp;
 	packet.size = size+4;
