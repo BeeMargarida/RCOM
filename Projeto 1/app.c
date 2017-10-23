@@ -26,6 +26,7 @@ int startReceiver()
 		if(buf == NULL){
 			continue;
 		}
+
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -98,7 +99,6 @@ void unpackStartPacket(unsigned char* buf)
 		printf("Error opening/creating file %s\n", filename);
 	}
 }
-
 
 void unpackDataPacket(unsigned char* buf)
 {
@@ -213,6 +213,7 @@ control_packet_t createDataPacket(int fdimage, int nseq){
 	temp[3] = L1;
 	memcpy(temp+4, imageBuf, size * sizeof(unsigned char));
 
+	printf("nao foi aqui\n");
 	control_packet_t packet;
 	packet.params = temp;
 	packet.size = size+4;

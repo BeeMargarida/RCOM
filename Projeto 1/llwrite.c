@@ -48,8 +48,7 @@ control_packet_t createTramaI(control_packet_t packet){
 	}
 
 	int stuffedSize = packet.size;
-	//printf("A: %d  Size: %d\n",asd,stuffedSize);
-	//asd++;
+	printf("FODA-SE: %d\n",stuffedSize);
 	unsigned char * stuffedPacket = stuffingData(packet.params, &stuffedSize);
 
 	unsigned char* trama = malloc((6 + stuffedSize) * sizeof(unsigned char));
@@ -62,11 +61,11 @@ control_packet_t createTramaI(control_packet_t packet){
 	packetI.params = trama;
 	packetI.size = stuffedSize + 6;
 
-	/*int j = 0;
+	int j = 0;
 	for(j; j < packetI.size + 5; j++){
 		printf("%x : ", packetI.params[j]);
 	}
-	printf("\n");*/
+	printf("\n");
 
 	return packetI;
 }
@@ -74,16 +73,6 @@ control_packet_t createTramaI(control_packet_t packet){
 //isto funciona bem
 void sendTrama(int serial_fd, control_packet_t packet){
 	int i = 0;
-	printf("PACKET: %d\n", numPacket);
-	printf("SIZE: %d\n", packet.size);
-	if(numPacket == 40){
-		for (i; i < packet.size; i++) {
-			printf("i%d %x : ", i, packet.params[i]);
-		}
-		printf("\n");
-	}
-
-
 	int wrote = write(serial_fd, packet.params, packet.size);
 	numPacket++;
 }
@@ -92,7 +81,7 @@ void sendTrama(int serial_fd, control_packet_t packet){
 int waitForAnswer(int serial_fd){
 	int reading = TRUE;
 	int nread;
-
+	
 	unsigned char rr[5] = {0x7e, 0x03, 0x01 , 0x01, 0x7e};
 	unsigned char rej[5] = {0x7e, 0x03, 0x01, 0x01, 0x7e};
 	rr[2] = (turn == 0 ? 0x05 : 0x85);
@@ -124,7 +113,7 @@ int waitForAnswer(int serial_fd){
 		return 0;
 	}
 	else if((answer[2] == 0x01 && turn == 0) || (answer[2] == 0x81 && turn == 1)){
-		printf("Reenvia\n");
+		//printf("Reenvia\n");
 		return 1;
 	}
 	else{
@@ -140,15 +129,16 @@ int llwrite(int serial_fd, control_packet_t packet) {
 	//sendTrama(serial_fd, packetI);
 
 	if(waitForAnswer(serial_fd) || first == 0){
+		printf("HALO\n");
 		first = 1;
-		//if(tries < 4){
+		if(tries < 4){
 			sendTrama(serial_fd, packetI);
-			//tries++;
-		//}
-		/*if(tries == 4){
+			tries++;
+		}
+		if(tries == 4){
 			tries = 0;
 			return 1;
-		}*/
+		}
 	}
 	tries = 0;
 
