@@ -22,10 +22,13 @@ int startReceiver()
 	while (reading)
 	{
 		int read = llread(serial_fd, buf, duplicate);
-		cnt += read;
+
 		if(buf == NULL){
+			printf("Buffer is null\n");
 			continue;
 		}
+
+		cnt += read;
 
 		if (read < 0)
 		{
@@ -49,11 +52,11 @@ int startReceiver()
 			reading = FALSE;
 		}
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
-		{
+		{/*
 			if(*duplicate){
 				*duplicate = 0;
 				continue;
-			}
+			}*/
 			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
 		}
@@ -107,6 +110,11 @@ void unpackDataPacket(unsigned char* buf)
 	int n = 256 * buf[2] + buf[3];
 	int i;
 	int x = write(fileDescriptor, buf + 4, n);
+
+	if (x != n)
+	{
+		printf("\nERROR\n");
+	}
 
 	printf("Wrote %d bytes\n\n", x);
 	/*if(first == 1){

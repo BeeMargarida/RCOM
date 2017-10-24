@@ -48,7 +48,7 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) { //tirar o s
 			return j;
 		if(tram[i] == 0x7E){
 			destuffing = 0;
-			buf[j] = tram[i];
+			//buf[j] = tram[i];
 			return j;
 		}
 		else if(tram[i] == 0x7D & tram[i + 1] == 0x5E){
@@ -71,59 +71,62 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) { //tirar o s
 }
 
 void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplicate){
-	int i = 0;
-	for(i; i < size; i++){
-		printf("%x-", tram[i]);
-	}
+/*	int i = 0;
+	for(i; i <= size; i++){
+		printf("%x : ", tram[i]);
+	}*/
 	printf("\n");
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
+		printf("Sending REJ because BCC1 is wrong\n");
 		buf = NULL;
 		sendREJ();
 		return;
 	}
-	char bcc2;
-
-
 	int j = destuffing(tram, buf, size);
-	bcc2 = buf[j-1];
+
+	unsigned char bcc2 = buf[j - 1];
 	int check = generateBCC(buf, j);
+	printf("TRAMbcc2: %x BCC2: %x Check %x\n", tram[size-1], bcc2, check);
 
 	if (bcc2 != check)
 	{
+		printf("Sending REJ because BCC2 is wrong\n");
 		buf = NULL;
 		sendREJ();
 		return;
 	}
 
-
 	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
 
-	if(!isNew)
-		printf("REPETIDO\n");
-
-	if(isNew /*&& (turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)*/){
+	if(/*isNew &&*/ (turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
+		printf("Sending RR because is new\n");
+		turnPacket = turnPacket == 1 ? 0 : 1;
 		sendRR();
-		turnPacket = ~turnPacket;
+		//turnPacket = ~turnPacket;
 		memcpy(lastData, buf, j - 1);
 	}
-	else if(!isNew /*|| (turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)*/){
+	else if(/*!isNew ||*/ (turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
+		printf("Sending RR because is duplicate but with no errors\n");
 		buf = NULL;
 		sendRR();
 	}
 	else {
+		printf("Sending REJ because idk\n");
 		buf = NULL;
 		sendREJ();
 	}
 }
 
-int generateBCC(unsigned char* buf, int size)
+unsigned char generateBCC(unsigned char* buf, int size)
 {
-	char bcc = buf[0];
+	unsigned char bcc = buf[0];
 	int i;
-	for (i = 1; i < size; i++)
+	for (i = 1; i < size - 1; i++)
+	{
 		bcc ^= buf[i];
+	}
 	return bcc;
 }
 

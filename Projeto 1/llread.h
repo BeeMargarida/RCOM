@@ -13,7 +13,7 @@
 #define BUF_SIZE 256
 
 
-int generateBCC(unsigned char* buf, int size);
+unsigned char generateBCC(unsigned char* buf, int size);
 void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplicate);
 void sendRR();
 void sendREJ();
