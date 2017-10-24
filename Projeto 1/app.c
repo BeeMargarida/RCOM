@@ -25,6 +25,7 @@ int startReceiver()
 
 		if(buf == NULL){
 			printf("Buffer is null\n");
+			buf = calloc(BUF_SIZE, sizeof(unsigned char));
 			continue;
 		}
 
@@ -167,11 +168,11 @@ control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int i
 	memcpy(packet + 3, size, 4*sizeof(unsigned char));
 	packet[7] = T2;
 	packet[8] = L2;
-	memcpy(packet + 9, fileName, strlen(fileName)*sizeof(unsigned char));
+	memcpy(packet + 9, fileName, 11*sizeof(unsigned char));
 
 	control_packet_t controlPacket;
 	controlPacket.params = packet;
-	controlPacket.size = 9+strlen(fileName);
+	controlPacket.size = 9+L2;
 
 	return controlPacket;
 }
@@ -221,6 +222,7 @@ control_packet_t createDataPacket(int fdimage, int nseq){
 	temp[3] = L1;
 	memcpy(temp+4, imageBuf, size * sizeof(unsigned char));
 
+	printf("nao foi aqui\n");
 	control_packet_t packet;
 	packet.params = temp;
 	packet.size = size+4;
