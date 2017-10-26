@@ -80,8 +80,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
 		printf("Sending REJ because BCC1 is wrong\n");
-		//buf = NULL;
-		free(buf);
+		buf = NULL;
 		sendREJ();
 		return;
 	}
@@ -89,13 +88,12 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 
 	unsigned char bcc2 = buf[j - 1];
 	int check = generateBCC(buf, j);
-	//printf("TRAMbcc2: %x BCC2: %x Check %x\n", tram[size-1], bcc2, check);
+	printf("TRAMbcc2: %x BCC2: %x Check %x\n", tram[size-1], bcc2, check);
 
 	if (bcc2 != check)
 	{
 		printf("Sending REJ because BCC2 is wrong\n");
-		//buf = NULL;
-		free(buf);
+		buf = NULL;
 		sendREJ();
 		return;
 	}
@@ -106,22 +104,18 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 		printf("Sending RR because is new\n");
 		turnPacket = turnPacket == 1 ? 0 : 1;
 		sendRR();
+		//turnPacket = ~turnPacket;
 		memcpy(lastData, buf, j - 1);
-		return;
 	}
 	else if(/*!isNew ||*/ (turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
 		printf("Sending RR because is duplicate but with no errors\n");
-		//buf = NULL;
-		free(buf);
+		buf = NULL;
 		sendRR();
-		return;
 	}
 	else {
 		printf("Sending REJ because idk\n");
-		//buf = NULL;
-		free(buf);
+		buf = NULL;
 		sendREJ();
-		return;
 	}
 }
 
