@@ -10,12 +10,9 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#include "control_packet.h"
+#include "utils.h"
 
 #define BAUDRATE B38400
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
 #define BUF_SIZE 256
 
 int llopen(int serial, Types_t type);

@@ -10,10 +10,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#include "control_packet.h"
-
-#define FALSE 0
-#define TRUE 1
+#include "utils.h"
 
 #define DATA_BLOCK 0x01
 #define DATA_START 0x02

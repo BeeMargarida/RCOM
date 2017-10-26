@@ -12,7 +12,7 @@ void receive_alarm() {
 }
 
 int create_alarm() {
-    (void)signal(SIGALRM, receive_alarm);  // instala  rotina que atende interrupcao
+    (void)signal(SIGALRM, receive_alarm);
     return SIGALRM;
 }
 
@@ -69,6 +69,7 @@ int llopen(int serial, Types_t type) {
     {
         unsigned char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
         create_alarm();
+        unsigned char res[5];
         while(conta < 4 && flag == 1 )
         {
             write(fd, set, 5);
@@ -76,12 +77,11 @@ int llopen(int serial, Types_t type) {
             flag = 0;
             alarm(3);
 
-            unsigned char res[5];
             int x;
             unsigned char input;
             int currentIndex = 0;
             while (STOP==FALSE && flag == 0 )
-            {       /* loop for input */
+            {
                 x = read(fd, &input, 1);
                 if (x == 0)
                     continue;
@@ -99,14 +99,13 @@ int llopen(int serial, Types_t type) {
                 if(currentIndex == 5) break;
             }
         }
-        if (TRUE)
+        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x07)
         {
-          printf("llopen exited successfully\n");
-          return fd;
+            return fd;
         }
         else
         {
-          printf("Error in llopen: invalid tram\n");
+          printf("Error in llopen: invalid frame\n");
           return -1;
         }
     }
@@ -138,12 +137,11 @@ int llopen(int serial, Types_t type) {
         {
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
-            printf("llopen exited successfully\n");
             return fd;
         }
         else
         {
-          printf("Error in llopen: invalid tram\n");
+          printf("Error in llopen: invalid frame\n");
           return -1;
         }
     }

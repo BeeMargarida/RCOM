@@ -32,7 +32,6 @@ int llread(int fd, unsigned char* buf)
 		}
 		i += nread;
 	}
-	printf("Read = %d\n", i);
 	return i;
 }
 
@@ -69,7 +68,6 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
-		printf("Sending REJ because BCC1 is wrong\n");
 		free(buf);
 		sendREJ();
 		return;
@@ -81,29 +79,23 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 
 	if (bcc2 != check)
 	{
-		printf("Sending REJ because BCC2 is wrong\n");
 		free(buf);
 		sendREJ();
 		return;
 	}
 
-	//int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
-
 	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
-		printf("Sending RR because is new\n");
 		turnPacket = turnPacket == 1 ? 0 : 1;
 		sendRR();
 		memcpy(lastData, buf, j - 1);
 		return;
 	}
 	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
-		printf("Sending RR because is duplicate but with no errors\n");
 		free(buf);
 		sendRR();
 		return;
 	}
 	else {
-		printf("Sending REJ because idk\n");
 		free(buf);
 		sendREJ();
 		return;
@@ -123,7 +115,6 @@ unsigned char generateBCC(unsigned char* buf, int size)
 
 void sendREJ()
 {
-	printf("MANDEI REJ\n");
 	unsigned char rej[] = { 0x7E, 0x03, 0x01, 0x03, 0x7E };
 	rej[2] = (turnPacket == 0 ? 0x01 : 0x81);
 	rej[3] = rej[1] ^ rej[2];
@@ -134,7 +125,6 @@ void sendREJ()
 
 void sendRR()
 {
-	printf("MANDEI RR\n");
 	unsigned char rr[] = { 0x7E, 0x03, 0x05, 0xF3, 0x7E };
 	rr[2] = (turnPacket == 0 ? 0x05 : 0x85);
 	rr[3] = rr[1] ^ rr[2];

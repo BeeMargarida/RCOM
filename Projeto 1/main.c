@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "application_layer.h"
 
 #define DEFAULT_SERIAL_PORT 0
@@ -38,7 +34,7 @@ int main(int argc, char** argv)
 	}
 	else if (strcmp(argv[1], "-s") == 0)
 	{
-		if (argc > 3)
+		if (argc < 3)
 		{
 			printf("Error: missing filename to send\n");
 			printUsage();

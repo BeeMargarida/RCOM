@@ -2,6 +2,7 @@
 #include "data_link_layer.h"
 
 int fileSize = 0;
+int currentSize = 0;
 int lastCycle = 0;
 int nSeq = 0; //is it right?
 int cnt = 0;
@@ -18,8 +19,9 @@ int getFileSize();
 int getImageData(unsigned char* buf, int fdimage);
 control_packet_t createFirstEndPacket(int fsize, char* fileName, int id);
 control_packet_t createDataPacket(int fdimage, int nseq);
+void printProgressBar();
+void printStatistics();
 
-// RECEIVER
 int startReceiver(int serial_no)
 {
 	serial_fd = llopen(serial_no, RECEIVER);
@@ -36,8 +38,6 @@ int startReceiver(int serial_no)
 			continue;
 		}
 
-		cnt += read;
-
 		if (read < 0)
 		{
 			printf("Error reading from llread\n");
@@ -49,28 +49,23 @@ int startReceiver(int serial_no)
 		printf("Start of data packet on startReceiver: %x\n", buf[0]);
 		if (buf[0] == DATA_START && first == FALSE)
 		{
-			printf("Processing trama START\n");
 			first = TRUE;
 			unpackStartPacket(buf);
 		}
 		else if (buf[0] == DATA_END && first == TRUE)
 		{
-			printf("Processing trama END\n");
 			unpackEndPacket(buf);
 			reading = FALSE;
 		}
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
 		{
-			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
 		}
 		else
 		{
 			printf("Invalid trama\n");
-			cnt--;
 		}
 	}
-	printf("\ncnt = %d\n", cnt);
 	return llclose(serial_fd, RECEIVER);
 }
 
@@ -85,8 +80,6 @@ void unpackStartPacket(unsigned char* buf)
 			fileSize <<= 8;
 			fileSize |= buf[i];
 		}
-		printf("File size: %d bytes\n", fileSize);
-
 	}
 	char* filename;
 	if (buf[i] == FILENAME)
@@ -98,7 +91,6 @@ void unpackStartPacket(unsigned char* buf)
 		int n = i;
 		for (i += 1, j = 0; i <= namelength + n; i++, j++)
 			filename[j] = buf[i];
-		printf("File name: %s\n", filename);
 	}
 
 	fileDescriptor = open((char*)filename, O_WRONLY | O_CREAT, MODE);
@@ -116,23 +108,23 @@ void unpackDataPacket(unsigned char* buf)
 
 	if (x != n)
 		printf("Failure writing the proper number of bytes of packet %d\n", seqN);
+
+	currentSize += x;
+	cnt++;
+	printProgressBar();
 }
 
 void unpackEndPacket(unsigned char* buf)
 {
-	printf("Last packet received\n");
-	//close(fileDescriptor);
+	//verificar o packet
+	//...
+	//...
+
+	printStatistics();
 	return;
 }
 
 
-
-// SENDER
-
-
-
-
-/**************cenas fixes****************************/
 int getFileSize() {
 	struct stat st;
 	fstat(fileDescriptor, &st);
@@ -146,11 +138,11 @@ control_packet_t createFirstEndPacket(int fsize, char* fileName, int id) {
 	size[2] = (fsize >> 8) & 0xFF;
 	size[3] = fsize & 0xFF;
 
-	unsigned char C = id == 0  ? 0x02 : 0x03; //flag de start
-	unsigned char T1 = 0x00; 									//type = tamanho do ficheiro
-	unsigned char L1 = 0x04; 									//tamanho de V1
-	unsigned char T2 = 0x01; 									//type = nome do ficheiro
-	unsigned char L2 = strlen(fileName); 			//tamanho do nome pinguim.gif
+	unsigned char C = id == 0  ? 0x02 : 0x03; 	//flag de start
+	unsigned char T1 = 0x00; 					//type = tamanho do ficheiro
+	unsigned char L1 = 0x04; 					//tamanho de V1
+	unsigned char T2 = 0x01; 					//type = nome do ficheiro
+	unsigned char L2 = strlen(fileName); 		//tamanho do nome pinguim.gif
 
 	unsigned char *packet = malloc((5+4+L2) * sizeof(unsigned char));
 	packet[0] = C;
@@ -263,6 +255,26 @@ int startSender(char* fileName, int serial_no)
 	//send end packet
 	if(sendControlPacket(1, fsize, fileName))
 		return -1;
-	//llclose();
+		
 	return llclose(serial_fd, SENDER);
+}
+
+void printProgressBar()
+{
+	clearScreen();
+	printf("Progress: [");
+	float percentage = (float)currentSize / fileSize;
+	int numberOfSymbols = percentage * 20 / 100;
+	for (int i = 0; i < numberOfSymbols; i++)
+	 	printf("#");
+	for (int i = 0; i < 20 - numberOfSymbols; i++)
+		printf(" ");
+	printf("] %.1f%%\n",percentage);
+}
+
+void printStatistics()
+{
+	printf("File transfered successfully\n");
+	printf("Final size: %d bytes\n", currentSize);
+	printf("Distinct data packets: %d\n", cnt);
 }

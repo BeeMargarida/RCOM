@@ -8,12 +8,11 @@ int first = 0;
 int f=1;
 
 void receive_alarm1() {
-    printf("alarme #\n");
-    f=1;
+    f = 1;
 }
 
 int create_alarm1() {
-    (void) signal(SIGALRM, receive_alarm1);  // instala  rotina que atende interrupcao
+    (void) signal(SIGALRM, receive_alarm1);
     return SIGALRM;
 }
 
@@ -76,7 +75,6 @@ control_packet_t createTramaI(control_packet_t packet){
 	return packetI;
 }
 
-//isto funciona bem
 void sendTrama(int serial_fd, control_packet_t packet){
 	int i = 0;
 	int counter = 0;
@@ -94,9 +92,6 @@ void sendTrama(int serial_fd, control_packet_t packet){
 			counter++;
 		}
 	}
-	printf("\n");
-	printf("numPacket: %d\n", numPacket);
-	printf("Wrote %d bytes\n", counter);
 }
 
 int waitForAnswer(int serial_fd){
@@ -112,15 +107,12 @@ int waitForAnswer(int serial_fd){
 	}
 	if(answer[0] == 0x7E){
 		if(answer[3] != (answer[1]^answer[2])){
-			printf("BCC Error\n");
 			return 1;
 		}
 		else if((answer[2] == 0x01 && turn == 0) || (answer[2] == 0x81 && turn == 1)){
-			printf("REJ Received\n");
 			return 1;
 		}
 		else if((answer[2] == 0x05 && turn == 0) || (answer[2] == 0x85 && turn == 1)){
-			printf("RR Received\n");
 			numPacket++;
 			return 0;
 		}
