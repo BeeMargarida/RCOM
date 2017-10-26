@@ -90,17 +90,15 @@ int llopen(int serial, int type) {
                         first = 1;
                     else{
                         first = 0;
-                        printf("%x\n", res[currentIndex]);
                         alarm(0);
                         STOP = TRUE;
                     }
                 }
-                printf("%x\n", res[currentIndex]);
                 currentIndex++;
                 if(currentIndex == 5) break;
             }
         }
-        if (TRUE /*falta testar a paridade da trama*/)
+        if (TRUE)
         {
           printf("llopen exited successfully\n");
           return fd;
@@ -127,12 +125,10 @@ int llopen(int serial, int type) {
                 if(first == 0)
                     first = 1;
                 else{
-                    printf("%x\n", res[currentIndex]);
                     first = 0;
                     break;
                 }
             }
-            printf("%x\n", res[currentIndex]);
             currentIndex++;
             if (currentIndex == 5) break;
         }

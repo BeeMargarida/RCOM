@@ -14,9 +14,9 @@
 
 
 unsigned char generateBCC(unsigned char* buf, int size);
-void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplicate);
+void processTram(unsigned char* tram, unsigned char* buf, int size);
 void sendRR();
 void sendREJ();
-int llread(int fd, unsigned char* buf, int* duplicate);
+int llread(int fd, unsigned char* buf);
 
 #endif

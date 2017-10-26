@@ -16,7 +16,6 @@ int create_alarm1() {
     (void) signal(SIGALRM, receive_alarm1);  // instala  rotina que atende interrupcao
 }
 
-//isto funciona bem
 unsigned char* stuffingData(unsigned char * buf, int *size){
 	int n = *size;
 	unsigned char *trama = malloc(512*sizeof(unsigned char));
@@ -46,7 +45,6 @@ unsigned char* stuffingData(unsigned char * buf, int *size){
 	return trama;
 }
 
-//isto funciona bem
 control_packet_t createTramaI(control_packet_t packet){
 	unsigned char F = 0x7E;
 	unsigned char A = 0x03;
@@ -74,20 +72,13 @@ control_packet_t createTramaI(control_packet_t packet){
 	control_packet_t packetI;
 	packetI.params = trama;
 	packetI.size = stuffedSize + 5;
-	/*int j = 0;
-	for(j; j < packetI.size ; j++){
-		printf("%x : ", packetI.params[j]);
-	}
-	printf("\n");*/
-
 	return packetI;
 }
 
 //isto funciona bem
 void sendTrama(int serial_fd, control_packet_t packet){
 	int i = 0;
-	int counter = 0;/*
-	int wrote = write(serial_fd, packet.params, packet.size);*/
+	int counter = 0;
 	int not7E = TRUE;
 	while(not7E)
 	{
@@ -107,7 +98,6 @@ void sendTrama(int serial_fd, control_packet_t packet){
 	printf("Wrote %d bytes\n", counter);
 }
 
-//isto se calhar nao
 int waitForAnswer(int serial_fd){
 	int reading = TRUE;
 	int nread;
@@ -170,33 +160,6 @@ int llwrite(int serial_fd, control_packet_t packet) {
 				break;
 			}
 		}
-		/*while(f == 0 && answer == -1){
-			answer = waitForAnswer(serial_fd);
-			if(answer == -1){
-				alarm(0);
-			}
-			else if(answer == 0){
-				cycle = FALSE;
-				break;
-			}
-		}*/
-		
-		
 	}
-/*
-	if(waitForAnswer(serial_fd) || first == 0){
-		//sendTrama(serial_fd, packetI);
-		first = 1;
-		if(tries < 4){
-			sendTrama(serial_fd, packetI);
-			tries++;
-		}
-		if(tries == 4){
-			tries = 0;
-			return 1;
-		}
-	}
-	tries = 0;*/
-
 	return 0;
 }

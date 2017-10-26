@@ -18,10 +18,9 @@ int startReceiver()
 	int reading = TRUE;
 	unsigned char* buf = calloc(BUF_SIZE, sizeof(unsigned char));
 	int first = FALSE;
-	int* duplicate = calloc(1, sizeof(int));
 	while (reading)
 	{
-		int read = llread(serial_fd, buf, duplicate);
+		int read = llread(serial_fd, buf);
 
 		if(buf == NULL){
 			printf("Buffer is null\n");
@@ -52,11 +51,7 @@ int startReceiver()
 			reading = FALSE;
 		}
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
-		{/*
-			if(*duplicate){
-				*duplicate = 0;
-				continue;
-			}*/
+		{
 			printf("Processing trama DATA\n");
 			unpackDataPacket(buf);
 		}
@@ -117,13 +112,6 @@ void unpackDataPacket(unsigned char* buf)
 	}
 
 	printf("Wrote %d bytes\n\n", x);
-	/*if(first == 1){
-	for (i = 4; i < n + 6; i++)
-		printf("%x : ", buf[i]);
-	printf("\n");
-	first++;
-	}
-	first++;*/
 }
 
 void unpackEndPacket(unsigned char* buf)
@@ -271,6 +259,5 @@ int startSender(unsigned char* fileName)
 	if(sendControlPacket(1, fsize, fileName))
 		return -1;
 	//llclose();
-	//close(fd);
 	return 0;
 }

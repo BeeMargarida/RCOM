@@ -4,12 +4,9 @@ int serial_fd;
 int turnPacket = 0;
 char* lastData;
 
-int llread(int fd, unsigned char* buf, int* duplicate)
+int llread(int fd, unsigned char* buf)
 {
 	serial_fd = fd;
-
-	//unsigned char* received = (unsigned char*)calloc(BUF_SIZE * 4, sizeof(unsigned char));
-
 	lastData = calloc(BUF_SIZE, sizeof(char));
 	int reading = TRUE;
 	int nread;
@@ -25,22 +22,15 @@ int llread(int fd, unsigned char* buf, int* duplicate)
 		}
 		if (i != 0 && buffer[i] == 0x7E){
 			reading = FALSE;
-			/*printf("FACK\n");
-			/nt j = 0;
-			for(j; j < i; j++){
-				printf("%x : ", buffer[j]);
-			}
-			printf("\n");*/
-			processTram(buffer, buf, i, duplicate);
+			processTram(buffer, buf, i);
 		}
 		i += nread;
 	}
-	//memset(received, 0, i);
 	printf("Read = %d\n", i);
 	return i;
 }
 
-int destuffing (unsigned char* tram, unsigned char* buf, int size) { //tirar o size daqui
+int destuffing (unsigned char* tram, unsigned char* buf, int size) {
 	int destuffing = 1;
 	int i = 4, j = 0;
 	while(destuffing){
@@ -48,7 +38,6 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) { //tirar o s
 			return j;
 		if(tram[i] == 0x7E){
 			destuffing = 0;
-			//buf[j] = tram[i];
 			return j;
 		}
 		else if(tram[i] == 0x7D & tram[i + 1] == 0x5E){
@@ -70,17 +59,11 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) { //tirar o s
 	return j;
 }
 
-void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplicate){
-/*	int i = 0;
-	for(i; i <= size; i++){
-		printf("%x : ", tram[i]);
-	}*/
-	printf("\n");
+void processTram(unsigned char* tram, unsigned char* buf, int size){
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
 		printf("Sending REJ because BCC1 is wrong\n");
-		//buf = NULL;
 		free(buf);
 		sendREJ();
 		return;
@@ -89,12 +72,10 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 
 	unsigned char bcc2 = buf[j - 1];
 	int check = generateBCC(buf, j);
-	//printf("TRAMbcc2: %x BCC2: %x Check %x\n", tram[size-1], bcc2, check);
 
 	if (bcc2 != check)
 	{
 		printf("Sending REJ because BCC2 is wrong\n");
-		//buf = NULL;
 		free(buf);
 		sendREJ();
 		return;
@@ -102,23 +83,21 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, int* duplica
 
 	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
 
-	if(/*isNew &&*/ (turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
+	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
 		printf("Sending RR because is new\n");
 		turnPacket = turnPacket == 1 ? 0 : 1;
 		sendRR();
 		memcpy(lastData, buf, j - 1);
 		return;
 	}
-	else if(/*!isNew ||*/ (turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
+	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
 		printf("Sending RR because is duplicate but with no errors\n");
-		//buf = NULL;
 		free(buf);
 		sendRR();
 		return;
 	}
 	else {
 		printf("Sending REJ because idk\n");
-		//buf = NULL;
 		free(buf);
 		sendREJ();
 		return;
