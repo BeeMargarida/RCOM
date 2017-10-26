@@ -111,10 +111,6 @@ int waitForAnswer(int serial_fd){
 		printf("Error reading answer");
 		return 1;
 	}
-	printf("CONTROL: ");
-	for(int j = 0; j < 5; j++)
-		printf("%x :", answer[j]);
-	printf("\n");
 	if(answer[0] == 0x7E){
 		if(answer[3] != (answer[1]^answer[2])){
 			printf("BCC Error\n");
