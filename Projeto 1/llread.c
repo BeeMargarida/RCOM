@@ -1,8 +1,14 @@
-#include "llread.h"
+#include "data_link_layer.h"
 
 int serial_fd;
 int turnPacket = 0;
 char* lastData;
+
+unsigned char generateBCC(unsigned char* buf, int size);
+int destuffing(unsigned char* tram, unsigned char* buf, int size);
+void processTram(unsigned char* tram, unsigned char* buf, int size);
+void sendREJ();
+void sendRR();
 
 int llread(int fd, unsigned char* buf)
 {
@@ -30,7 +36,7 @@ int llread(int fd, unsigned char* buf)
 	return i;
 }
 
-int destuffing (unsigned char* tram, unsigned char* buf, int size) {
+int destuffing(unsigned char* tram, unsigned char* buf, int size) {
 	int destuffing = 1;
 	int i = 4, j = 0;
 	while(destuffing){
@@ -40,12 +46,12 @@ int destuffing (unsigned char* tram, unsigned char* buf, int size) {
 			destuffing = 0;
 			return j;
 		}
-		else if(tram[i] == 0x7D & tram[i + 1] == 0x5E){
+		else if(tram[i] == 0x7D && tram[i + 1] == 0x5E){
 			buf[j] = 0x7E;
 			j++;
 			i+=2;
 		}
-		else if(tram[i] == 0x7D & tram[i + 1] == 0x5D){
+		else if(tram[i] == 0x7D && tram[i + 1] == 0x5D){
 			buf[j] = 0x7D;
 			j++;
 			i+=2;
@@ -81,7 +87,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 		return;
 	}
 
-	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
+	//int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
 
 	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
 		printf("Sending RR because is new\n");

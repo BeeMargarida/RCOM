@@ -1,4 +1,4 @@
-#include "data_link.h"
+#include "data_link_layer.h"
 
 volatile int STOP=FALSE;
 int flag=1, conta=1;
@@ -12,12 +12,13 @@ void receive_alarm() {
 }
 
 int create_alarm() {
-    (void) signal(SIGALRM, receive_alarm);  // instala  rotina que atende interrupcao
+    (void)signal(SIGALRM, receive_alarm);  // instala  rotina que atende interrupcao
+    return SIGALRM;
 }
 
-int llopen(int serial, int type) {
+int llopen(int serial, Types_t type) {
 
-    int c, res, fd;
+    int fd;
     struct termios oldtio,newtio;
 
     switch (serial)

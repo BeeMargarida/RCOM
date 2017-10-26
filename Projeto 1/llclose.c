@@ -1,5 +1,6 @@
+#include "data_link_layer.h"
 
-int llclose(int fd, int SorR){
+int llclose(int fd, Types_t type){
 	/*int dc = 0;
 	inc conta = 0;
 
@@ -25,7 +26,7 @@ int llclose(int fd, int SorR){
 			break;
 		case 1: //receiver
 			while(!dc){
-				int n = 
+				int n =
 			}
 	}
 */

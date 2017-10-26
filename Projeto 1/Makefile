@@ -1,2 +1,2 @@
 all:
-	gcc *.c -o rcom -w
+	gcc *.c -o rcom -Wall

@@ -1,4 +1,4 @@
-#include "llwrite.h"
+#include "data_link_layer.h"
 
 int turn = 0;
 int tries = 0;
@@ -14,6 +14,7 @@ void receive_alarm1() {
 
 int create_alarm1() {
     (void) signal(SIGALRM, receive_alarm1);  // instala  rotina que atende interrupcao
+    return SIGALRM;
 }
 
 unsigned char* stuffingData(unsigned char * buf, int *size){
@@ -52,13 +53,13 @@ control_packet_t createTramaI(control_packet_t packet){
 	unsigned char BCC1 = A ^ C1;
 	unsigned char BCC2 = packet.params[0];
 	int i = 1;
-	for(i; i < packet.size; i++){
+	for(; i < packet.size; i++){
 		BCC2 ^= packet.params[i];
 	}
 
 	int stuffedSize = packet.size + 1;
 	unsigned char * notStuffedPacket = malloc((1 + packet.size) * sizeof(unsigned char));
-	
+
 	memcpy(notStuffedPacket, packet.params, packet.size*sizeof(unsigned char));
 	notStuffedPacket[packet.size] = BCC2;
 
@@ -99,11 +100,9 @@ void sendTrama(int serial_fd, control_packet_t packet){
 }
 
 int waitForAnswer(int serial_fd){
-	int reading = TRUE;
 	int nread;
 
 	unsigned char answer[5] = {};
-	int i = 0;
 
 	nread = read(serial_fd, answer, 5);
 	if (nread < 0)

@@ -1,19 +1,28 @@
-#include "data_link.h"
+#include "application_layer.h"
+#include "data_link_layer.h"
 
 int fileSize = 0;
-unsigned char* filename;
-int serial_fd = 0;
-int serial_id = 0;
 int lastCycle = 0;
 int nSeq = 0; //is it right?
-int fileDescriptor = 0;
 int cnt = 0;
 
+int serial_fd;
+int fileDescriptor;
+
+void unpackStartPacket(unsigned char* buf);
+void unpackDataPacket(unsigned char* buf);
+void unpackEndPacket(unsigned char* buf);
+void writeDataStart(unsigned char* buf);
+void writeDataBlock(unsigned char* buf);
+int getFileSize();
+int getImageData(unsigned char* buf, int fdimage);
+control_packet_t createFirstEndPacket(int fsize, char* fileName, int id);
+control_packet_t createDataPacket(int fdimage, int nseq);
 
 // RECEIVER
-int startReceiver()
+int startReceiver(int serial_no)
 {
-	serial_fd = llopen(serial_id, RECEIVER);
+	serial_fd = llopen(serial_no, RECEIVER);
 
 	int reading = TRUE;
 	unsigned char* buf = calloc(BUF_SIZE, sizeof(unsigned char));
@@ -62,7 +71,7 @@ int startReceiver()
 		}
 	}
 	printf("\ncnt = %d\n", cnt);
-	return llclose(serial_fd);
+	return llclose(serial_fd, RECEIVER);
 }
 
 void unpackStartPacket(unsigned char* buf)
@@ -73,12 +82,13 @@ void unpackStartPacket(unsigned char* buf)
 		int sizelength = buf[2];
 		for (i = 3; i < sizelength + 3; i++)
 		{
-			fileSize << 8;
+			fileSize <<= 8;
 			fileSize |= buf[i];
 		}
 		printf("File size: %d bytes\n", fileSize);
 
 	}
+	char* filename;
 	if (buf[i] == FILENAME)
 	{
 		i++;
@@ -91,7 +101,7 @@ void unpackStartPacket(unsigned char* buf)
 		printf("File name: %s\n", filename);
 	}
 
-	fileDescriptor = open(filename, O_WRONLY | O_CREAT, MODE);
+	fileDescriptor = open((char*)filename, O_WRONLY | O_CREAT, MODE);
 	if (fileDescriptor < 0)
 	{
 		printf("Error opening/creating file %s\n", filename);
@@ -101,17 +111,11 @@ void unpackStartPacket(unsigned char* buf)
 void unpackDataPacket(unsigned char* buf)
 {
 	int seqN = buf[1];
-	printf("Processing packet %d\n", seqN);
 	int n = 256 * buf[2] + buf[3];
-	int i;
 	int x = write(fileDescriptor, buf + 4, n);
 
 	if (x != n)
-	{
-		printf("\nERROR\n");
-	}
-
-	printf("Wrote %d bytes\n\n", x);
+		printf("Failure writing the proper number of bytes of packet %d\n", seqN);
 }
 
 void unpackEndPacket(unsigned char* buf)
@@ -135,7 +139,7 @@ int getFileSize() {
 	return st.st_size;
 }
 
-control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int id) {
+control_packet_t createFirstEndPacket(int fsize, char* fileName, int id) {
 	unsigned char size[4];
 	size[0] = (fsize >> 24) & 0xFF;
 	size[1] = (fsize >> 16) & 0xFF;
@@ -143,10 +147,10 @@ control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int i
 	size[3] = fsize & 0xFF;
 
 	unsigned char C = id == 0  ? 0x02 : 0x03; //flag de start
-	unsigned char T1 = 0x00; //type = tamanho do ficheiro
-	unsigned char L1 = 0x04; //tamanho de V1
-	unsigned char T2 = 0x01; //type = nome do ficheiro
-	unsigned char L2 = strlen(fileName); //tamanho do nome pinguim.gif
+	unsigned char T1 = 0x00; 									//type = tamanho do ficheiro
+	unsigned char L1 = 0x04; 									//tamanho de V1
+	unsigned char T2 = 0x01; 									//type = nome do ficheiro
+	unsigned char L2 = strlen(fileName); 			//tamanho do nome pinguim.gif
 
 	unsigned char *packet = malloc((5+4+L2) * sizeof(unsigned char));
 	packet[0] = C;
@@ -164,7 +168,7 @@ control_packet_t createFirstEndPacket(int fsize, unsigned char * fileName, int i
 	return controlPacket;
 }
 
-int sendControlPacket(int SorR, int fsize, unsigned char *fname){
+int sendControlPacket(int SorR, int fsize, char* fname){
 	control_packet_t packet;
 	switch(SorR){
 		case 0: //start
@@ -187,7 +191,8 @@ control_packet_t createDataPacket(int fdimage, int nseq){
 	unsigned char imageBuf[256] = {};
 	int size = getImageData(imageBuf, fdimage);
 	if(size < 0){
-		return ;
+		control_packet_t packet;
+		return packet;
 	} else if(size < 256){
 		lastCycle = 1;
 	}
@@ -231,9 +236,9 @@ int getImageData(unsigned char* buf, int fdimage) {
 	return x;
 }
 
-int startSender(unsigned char* fileName)
+int startSender(char* fileName, int serial_no)
 {
-	serial_fd = llopen(serial_id, SENDER);
+	serial_fd = llopen(serial_no, SENDER);
 
 	fileDescriptor = open(fileName, O_RDONLY);
 	if(fileDescriptor < 0){
@@ -259,5 +264,5 @@ int startSender(unsigned char* fileName)
 	if(sendControlPacket(1, fsize, fileName))
 		return -1;
 	//llclose();
-	return 0;
+	return llclose(serial_fd, SENDER);
 }
