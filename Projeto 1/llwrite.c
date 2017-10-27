@@ -102,7 +102,7 @@ int waitForAnswer(int serial_fd){
 	nread = read(serial_fd, answer, 5);
 	if (nread < 0)
 	{
-		printf("Error reading answer");
+		perror("Error reading answer");
 		return 1;
 	}
 	if(answer[0] == 0x7E){

@@ -34,7 +34,6 @@ int startReceiver(int serial_no)
 		int read = llread(serial_fd, buf);
 
 		if(buf == NULL){
-			printf("Buffer is null\n");
 			continue;
 		}
 
@@ -46,7 +45,6 @@ int startReceiver(int serial_no)
 		if (read == 0)
 			continue;
 
-		printf("Start of data packet on startReceiver: %x\n", buf[0]);
 		if (buf[0] == DATA_START && first == FALSE)
 		{
 			first = TRUE;
@@ -60,10 +58,6 @@ int startReceiver(int serial_no)
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
 		{
 			unpackDataPacket(buf);
-		}
-		else
-		{
-			printf("Invalid trama\n");
 		}
 	}
 	return llclose(serial_fd, RECEIVER);
@@ -129,8 +123,6 @@ void unpackEndPacket(unsigned char* buf)
 			fileSizeFinal |= buf[i];
 		}
 	}
-	printf("File size initial: %d\n", fileSize);
-	printf("File size final: %d\n", fileSizeFinal);
 	if (fileSize != fileSizeFinal)
 		printf("Initial and final file sizes do not match\n");
 
@@ -199,10 +191,8 @@ int sendControlPacket(int SorR, int fsize, char* fname){
 			break;
 	}
 	if(llwrite(serial_fd, packet)){
-		printf("erro a enviar pacote de controlo\n");
 		return -1;
 	}
-	printf("enviou o pacote de controlo corretamente\n");
 	return 0;
 }
 
@@ -247,7 +237,6 @@ control_packet_t sendDataPacket() {
 
 int getImageData(unsigned char* buf, int fdimage) {
 	int x = read(fdimage, buf, 256);
-	printf("Agora li: %d\n", x);
 	if(x < 0){
 		printf("Error reading the file");
 		return -1;
