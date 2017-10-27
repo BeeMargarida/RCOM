@@ -20,7 +20,7 @@ int getImageData(unsigned char* buf, int fdimage);
 control_packet_t createFirstEndPacket(int fsize, char* fileName, int id);
 control_packet_t createDataPacket(int fdimage, int nseq);
 void printProgressBar();
-void printStatistics();
+void printStatistics(char* filename);
 
 int startReceiver(int serial_no)
 {
@@ -116,11 +116,38 @@ void unpackDataPacket(unsigned char* buf)
 
 void unpackEndPacket(unsigned char* buf)
 {
-	//verificar o packet
-	//...
-	//...
+	int i;
+	int fileSizeFinal = 0;
+	
+	if (buf[1] == FILESIZE)
+	{
+		int sizelength = buf[2];
 
-	printStatistics();
+		for (i = 3; i < sizelength + 3; i++)
+		{
+			fileSizeFinal <<= 8;
+			fileSizeFinal |= buf[i];
+		}
+	}
+	printf("File size initial: %d\n", fileSize);
+	printf("File size final: %d\n", fileSizeFinal);
+	if (fileSize != fileSizeFinal)
+		printf("Initial and final file sizes do not match\n");
+
+	char* filename;
+	if (buf[i] == FILENAME)
+	{
+		i++;
+		int namelength = buf[i];
+		filename = malloc(sizeof(unsigned char) * namelength);
+		int j;
+		int n = i;
+		for (i += 1, j = 0; i <= namelength + n; i++, j++)
+			filename[j] = buf[i];
+	}
+	if (access(filename, F_OK) != -1)
+		printStatistics(filename);
+
 	return;
 }
 
@@ -255,7 +282,7 @@ int startSender(char* fileName, int serial_no)
 	//send end packet
 	if(sendControlPacket(1, fsize, fileName))
 		return -1;
-		
+
 	return llclose(serial_fd, SENDER);
 }
 
@@ -264,17 +291,18 @@ void printProgressBar()
 	clearScreen();
 	printf("Progress: [");
 	float percentage = (float)currentSize / fileSize;
-	int numberOfSymbols = percentage * 20 / 100;
-	for (int i = 0; i < numberOfSymbols; i++)
+	int numberOfSymbols = (percentage * 20*100) / 100;
+	int i;
+	for (i = 0; i < numberOfSymbols; i++)
 	 	printf("#");
-	for (int i = 0; i < 20 - numberOfSymbols; i++)
+	for (i = 0; i < 20 - numberOfSymbols; i++)
 		printf(" ");
-	printf("] %.1f%%\n",percentage);
+	printf("] %.1f%%\n", percentage);
 }
 
-void printStatistics()
+void printStatistics(char* filename)
 {
-	printf("File transfered successfully\n");
+	printf("File %s transfered successfully\n", filename);
 	printf("Final size: %d bytes\n", currentSize);
 	printf("Distinct data packets: %d\n", cnt);
 }
