@@ -85,6 +85,8 @@ int llopen(int serial, Types_t type) {
                 x = read(fd, &input, 1);
                 if (x == 0)
                     continue;
+                if(x == -1)
+                    perror("Error reading from serial port");
                 res[currentIndex] = input;
                 if (res[currentIndex] == 0x7E){
                     if(first == 0)
@@ -120,6 +122,8 @@ int llopen(int serial, Types_t type) {
             x = read(fd, &input, 1);
             if (x == 0)
                 continue;
+            if(x == -1)
+                perror("Error reading from serial port");
             res[currentIndex] = input;
             if (res[currentIndex] == 0x7E){
                 if(first == 0)
@@ -153,12 +157,13 @@ int llclose(int fd, Types_t type){
     int first = 0;
     if(type == SENDER){
         unsigned char discS[5] = {};
-        discS[0] = 0x7e;
+        discS[0] = 0x7E;
         discS[1] = 0x03;
         discS[2] = 0x0B;
         discS[3] = discS[1] ^ discS[2];
-        discS[4] = 0x7e;
-        create_alarm();
+        discS[4] = 0x7E;
+        flag = 1;
+        STOP = FALSE;
         unsigned char res[5];
         while(conta < 4 && flag == 1)
         {
@@ -170,11 +175,13 @@ int llclose(int fd, Types_t type){
             int x;
             unsigned char input;
             int currentIndex = 0;
-            while (STOP==FALSE && flag == 0 )
+            while (STOP==FALSE && flag == 0)
             {
                 x = read(fd, &input, 1);
                 if (x == 0)
                     continue;
+                if(x == -1)
+                    perror("Error reading from serial port");
                 res[currentIndex] = input;
                 if (res[currentIndex] == 0x7E){
                     if(first == 0)
@@ -189,15 +196,16 @@ int llclose(int fd, Types_t type){
                 if(currentIndex == 5) break;
             }
         }
-        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03)
+        if(res[3] == (res[1]^res[2]) && res[2] == 0x0B)
         {
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
+            printf("llclose exited successfully\n");
             return close(fd);
         }
         else
         {
-          printf("Error in llclose\n");
+          printf("Error in llclose. DISC of RECEIVER Incorrect\n");
           return -1;
         }
     }
@@ -206,10 +214,13 @@ int llclose(int fd, Types_t type){
         char input;
         int x;
         int currentIndex = 0;
-        while (STOP==FALSE) {       /* loop for input */
+        STOP = FALSE;
+        while (STOP==FALSE) {      
             x = read(fd, &input, 1);
             if (x == 0)
                 continue;
+            if(x == -1)
+                perror("Error reading from serial port");
             res[currentIndex] = input;
             if (res[currentIndex] == 0x7E){
                 if(first == 0)
@@ -223,24 +234,26 @@ int llclose(int fd, Types_t type){
             if (currentIndex == 5) break;
         }
 
-        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03)
+        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x0B)
         {
             unsigned char discR[5] = {};
-            discR[0] = 0x7e;
+            discR[0] = 0x7E;
             discR[1] = 0x01;
             discR[2] = 0x0B;
             discR[3] = discR[1] ^ discR[2];
-            discR[4] = 0x7e;
+            discR[4] = 0x7E;
             write(fd, discR, 5);
 
-            STOP = TRUE;
+            STOP = FALSE;
             first = 0;
             char ua[5] = {};
             currentIndex = 0;
-            while (STOP==FALSE) {       /* loop for input */
+            while (STOP==FALSE) {       
                 x = read(fd, &input, 1);
                 if (x == 0)
                     continue;
+                if(x == -1)
+                    perror("Error reading from serial port");
                 ua[currentIndex] = input;
                 if (ua[currentIndex] == 0x7E){
                     if(first == 0)
@@ -253,18 +266,19 @@ int llclose(int fd, Types_t type){
                 currentIndex++;
                 if (currentIndex == 5) break;
             }
-            if(ua[3] == (ua[1]^ua[2]) && ua[2]==0x03){
+            if(ua[3] == (ua[1]^ua[2]) && ua[2]==0x07){
+                printf("llclose exited successfully\n");
                 return close(fd);
             }
             else
             {
-              printf("Error in llclose\n");
+              printf("Error in llclose: UA incorrect\n");
               return -1;
             }
         }
         else
         {
-          printf("Error in llclose\n");
+          printf("Error in llclose: DISC of SENDER Incorrect\n");
           return -1;
         }
     }

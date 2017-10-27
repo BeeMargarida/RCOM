@@ -294,10 +294,10 @@ void printProgressBar()
 	int numberOfSymbols = (percentage * 20*100) / 100;
 	int i;
 	for (i = 0; i < numberOfSymbols; i++)
-	 	printf("#");
+	 	printf("█");
 	for (i = 0; i < 20 - numberOfSymbols; i++)
-		printf(" ");
-	printf("] %.1f%%\n", percentage);
+		printf(".");
+	printf("] %.1f%%\n", percentage*100.0);
 }
 
 void printStatistics(char* filename)
