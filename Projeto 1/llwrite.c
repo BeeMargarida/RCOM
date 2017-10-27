@@ -7,12 +7,12 @@ int first = 0;
 
 int f=1;
 
-void receive_alarm1() {
+void receive_alarm_no_count() {
     f = 1;
 }
 
-int create_alarm1() {
-    (void) signal(SIGALRM, receive_alarm1);
+int create_alarm_no_count() {
+    (void) signal(SIGALRM, receive_alarm_no_count);
     return SIGALRM;
 }
 
@@ -127,7 +127,7 @@ int waitForAnswer(int serial_fd){
 
 int llwrite(int serial_fd, control_packet_t packet) {
 	control_packet_t packetI = createTramaI(packet);
-	create_alarm1();
+	create_alarm_no_count();
 	turn = 1 - turn;
 	int cycle = TRUE;
 	while(cycle){

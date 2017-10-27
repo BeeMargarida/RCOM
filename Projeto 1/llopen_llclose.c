@@ -147,3 +147,126 @@ int llopen(int serial, Types_t type) {
     }
     return -1;
 }
+
+
+int llclose(int fd, Types_t type){
+    int first = 0;
+    if(type == SENDER){
+        unsigned char discS[5] = {};
+        discS[0] = 0x7e;
+        discS[1] = 0x03;
+        discS[2] = 0x0B;
+        discS[3] = discS[1] ^ discS[2];
+        discS[4] = 0x7e;
+        create_alarm();
+        unsigned char res[5];
+        while(conta < 4 && flag == 1)
+        {
+            write(fd, discS, 5);
+
+            flag = 0;
+            alarm(3);
+
+            int x;
+            unsigned char input;
+            int currentIndex = 0;
+            while (STOP==FALSE && flag == 0 )
+            {
+                x = read(fd, &input, 1);
+                if (x == 0)
+                    continue;
+                res[currentIndex] = input;
+                if (res[currentIndex] == 0x7E){
+                    if(first == 0)
+                        first = 1;
+                    else{
+                        first = 0;
+                        alarm(0);
+                        STOP = TRUE;
+                    }
+                }
+                currentIndex++;
+                if(currentIndex == 5) break;
+            }
+        }
+        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03)
+        {
+            char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
+            write(fd, ua, 5);
+            return close(fd);
+        }
+        else
+        {
+          printf("Error in llclose\n");
+          return -1;
+        }
+    }
+    else if(type == RECEIVER){
+        char res[5];
+        char input;
+        int x;
+        int currentIndex = 0;
+        while (STOP==FALSE) {       /* loop for input */
+            x = read(fd, &input, 1);
+            if (x == 0)
+                continue;
+            res[currentIndex] = input;
+            if (res[currentIndex] == 0x7E){
+                if(first == 0)
+                    first = 1;
+                else{
+                    first = 0;
+                    break;
+                }
+            }
+            currentIndex++;
+            if (currentIndex == 5) break;
+        }
+
+        if(res[3] == (res[1] ^ res[2]) && res[2] == 0x03)
+        {
+            unsigned char discR[5] = {};
+            discR[0] = 0x7e;
+            discR[1] = 0x01;
+            discR[2] = 0x0B;
+            discR[3] = discR[1] ^ discR[2];
+            discR[4] = 0x7e;
+            write(fd, discR, 5);
+
+            STOP = TRUE;
+            first = 0;
+            char ua[5] = {};
+            currentIndex = 0;
+            while (STOP==FALSE) {       /* loop for input */
+                x = read(fd, &input, 1);
+                if (x == 0)
+                    continue;
+                ua[currentIndex] = input;
+                if (ua[currentIndex] == 0x7E){
+                    if(first == 0)
+                        first = 1;
+                    else{
+                        first = 0;
+                        break;
+                    }
+                }
+                currentIndex++;
+                if (currentIndex == 5) break;
+            }
+            if(ua[3] == (ua[1]^ua[2]) && ua[2]==0x03){
+                return close(fd);
+            }
+            else
+            {
+              printf("Error in llclose\n");
+              return -1;
+            }
+        }
+        else
+        {
+          printf("Error in llclose\n");
+          return -1;
+        }
+    }
+    return -1;
+}
