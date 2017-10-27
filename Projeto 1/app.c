@@ -1,10 +1,14 @@
 #include "application_layer.h"
 #include "data_link_layer.h"
 
+
+#include <time.h>
+#include <sys/time.h>
+
 int fileSize = 0;
 int currentSize = 0;
 int lastCycle = 0;
-int nSeq = 0; //is it right?
+int nSeq = 0;
 int cnt = 0;
 
 int serial_fd;
@@ -19,8 +23,33 @@ int getFileSize();
 int getImageData(unsigned char* buf, int fdimage);
 control_packet_t createFirstEndPacket(int fsize, char* fileName, int id);
 control_packet_t createDataPacket(int fdimage, int nseq);
-void printProgressBar();
-void printStatistics(char* filename);
+
+void printProgressBar()
+{
+	clearScreen();
+	printf("Progress: [");
+	float percentage = (float)currentSize / fileSize;
+	int numberOfSymbols = (percentage * 20*100) / 100;
+	int i;
+	for (i = 0; i < numberOfSymbols; i++)
+	 	printf("█");
+	for (i = 0; i < 20 - numberOfSymbols; i++)
+		printf(".");
+	printf("] %.1f%%\n", percentage*100.0);
+}
+
+void printStatistics(char* filename)
+{
+	printf("File %s transfered successfully\n", filename);
+	printf("Final size: %d bytes\n", currentSize);
+	printf("Distinct data packets: %d\n", cnt);
+}
+
+void printStatisticsSender(char* filename, double time_diff, int fsize){
+	printf("File %s transfered successfully in %.02f seconds\n", filename, time_diff);
+	printf("Distinct data packets: %d\n", cnt);
+	printf("Connection Cap: %.02f bits/sec\n", (double)((fsize*8) / time_diff));
+}
 
 int startReceiver(int serial_no)
 {
@@ -254,6 +283,9 @@ int startSender(char* fileName, int serial_no)
 		return -1;
 	}
 
+	struct timespec start,end;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
 	int fsize = getFileSize();
 
 	//send start packet
@@ -266,32 +298,18 @@ int startSender(char* fileName, int serial_no)
 		if(llwrite(serial_fd, packet)){
 			return -1;
 		}
+		cnt++;
 	}
 
 	//send end packet
 	if(sendControlPacket(1, fsize, fileName))
 		return -1;
 
-	return llclose(serial_fd, SENDER);
-}
+	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+	double elapsedTime = (end.tv_sec - start.tv_sec) * 1000000.00 + (end.tv_nsec - start.tv_nsec) / 1000.00;
 
-void printProgressBar()
-{
 	clearScreen();
-	printf("Progress: [");
-	float percentage = (float)currentSize / fileSize;
-	int numberOfSymbols = (percentage * 20*100) / 100;
-	int i;
-	for (i = 0; i < numberOfSymbols; i++)
-	 	printf("█");
-	for (i = 0; i < 20 - numberOfSymbols; i++)
-		printf(".");
-	printf("] %.1f%%\n", percentage*100.0);
-}
+	printStatisticsSender(fileName, elapsedTime/1000000, fsize);
 
-void printStatistics(char* filename)
-{
-	printf("File %s transfered successfully\n", filename);
-	printf("Final size: %d bytes\n", currentSize);
-	printf("Distinct data packets: %d\n", cnt);
+	return llclose(serial_fd, SENDER);
 }

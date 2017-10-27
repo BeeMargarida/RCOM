@@ -7,7 +7,7 @@ void receive_alarm() {
     printf("alarme # %d\n", conta);
     flag=1;
     conta++;
-    if (conta >= 4)
+    if (conta >= RETRIES)
       exit(-1);
 }
 
@@ -70,7 +70,7 @@ int llopen(int serial, Types_t type) {
         unsigned char set[5] = {0x7E, 0x03, 0x03, 0x00, 0x7E};
         create_alarm();
         unsigned char res[5];
-        while(conta < 4 && flag == 1 )
+        while(conta < RETRIES && flag == 1 )
         {
             write(fd, set, 5);
 
@@ -165,7 +165,7 @@ int llclose(int fd, Types_t type){
         flag = 1;
         STOP = FALSE;
         unsigned char res[5];
-        while(conta < 4 && flag == 1)
+        while(conta < RETRIES && flag == 1)
         {
             write(fd, discS, 5);
 

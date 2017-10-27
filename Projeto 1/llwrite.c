@@ -130,11 +130,11 @@ int llwrite(int serial_fd, control_packet_t packet) {
 	create_alarm_no_count();
 	turn = 1 - turn;
 	int cycle = TRUE;
+	int answer = -1;
 	while(cycle){
 		sendTrama(serial_fd, packetI);
 		f = 0;
 		alarm(1);
-		int answer = -1;
 		while(f == 0 && answer == -1){
 			answer = waitForAnswer(serial_fd);
 			if(answer == 0){
@@ -148,5 +148,5 @@ int llwrite(int serial_fd, control_packet_t packet) {
 			}
 		}
 	}
-	return 0;
+	return answer;
 }

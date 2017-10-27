@@ -14,6 +14,7 @@
 
 #define BAUDRATE B38400
 #define BUF_SIZE 256
+#define RETRIES 4
 
 int llopen(int serial, Types_t type);
 int llread(int fd, unsigned char* buf);
