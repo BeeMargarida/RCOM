@@ -18,7 +18,7 @@ int create_alarm_no_count() {
 
 unsigned char* stuffingData(unsigned char * buf, int *size){
 	int n = *size;
-	unsigned char *trama = malloc(512*sizeof(unsigned char));
+	unsigned char *trama = malloc((BUF_SIZE*2)*sizeof(unsigned char));
 	int stuffing = 1;
 	int i = 0, j = 0;
 	while(stuffing){

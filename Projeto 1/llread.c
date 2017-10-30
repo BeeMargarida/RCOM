@@ -16,7 +16,7 @@ int llread(int fd, unsigned char* buf)
 	lastData = calloc(BUF_SIZE, sizeof(char));
 	int reading = TRUE;
 	int nread;
-	unsigned char* buffer = calloc(BUF_SIZE, sizeof(unsigned char));
+	unsigned char* buffer = calloc(BUF_SIZE*2, sizeof(unsigned char));
 	int i = 0;
 	while (reading)
 	{

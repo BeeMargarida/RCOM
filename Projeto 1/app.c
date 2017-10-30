@@ -1,7 +1,5 @@
 #include "application_layer.h"
 #include "data_link_layer.h"
-
-
 #include <time.h>
 #include <sys/time.h>
 
@@ -126,7 +124,7 @@ void unpackStartPacket(unsigned char* buf)
 void unpackDataPacket(unsigned char* buf)
 {
 	int seqN = buf[1];
-	int n = 256 * buf[2] + buf[3];
+	int n = BUF_SIZE * buf[2] + buf[3];
 	int x = write(fileDescriptor, buf + 4, n);
 
 	if (x != n)
@@ -141,7 +139,7 @@ void unpackEndPacket(unsigned char* buf)
 {
 	int i;
 	int fileSizeFinal = 0;
-	
+
 	if (buf[1] == FILESIZE)
 	{
 		int sizelength = buf[2];
@@ -226,19 +224,19 @@ int sendControlPacket(int SorR, int fsize, char* fname){
 }
 
 control_packet_t createDataPacket(int fdimage, int nseq){
-	unsigned char imageBuf[256] = {};
+	unsigned char imageBuf[BUF_SIZE] = {};
 	int size = getImageData(imageBuf, fdimage);
 	if(size < 0){
 		control_packet_t packet;
 		return packet;
-	} else if(size < 256){
+	} else if(size < BUF_SIZE){
 		lastCycle = 1;
 	}
 	unsigned char C = 0x01;
 	unsigned char N = nseq;
 	unsigned char L2;
 	unsigned char L1;
-	if(size == 256){
+	if(size == BUF_SIZE){
 		L2 = 0x01;
 		L1 = 0x00;
 	} else {
@@ -265,7 +263,7 @@ control_packet_t sendDataPacket() {
 }
 
 int getImageData(unsigned char* buf, int fdimage) {
-	int x = read(fdimage, buf, 256);
+	int x = read(fdimage, buf, BUF_SIZE);
 	if(x < 0){
 		printf("Error reading the file");
 		return -1;
