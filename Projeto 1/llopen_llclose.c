@@ -201,10 +201,10 @@ int llclose(int fd, Types_t type){
         {
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
-            printf("llclose exited successfully\n");
             usleep(1000);
             if (tcsetattr(fd,TCSANOW,&oldtio) == -1)
               perror("tcsetattr failed in llclose\n");
+            printf("llclose exited successfully\n");
             return close(fd);
         }
         else
@@ -271,9 +271,9 @@ int llclose(int fd, Types_t type){
                 if (currentIndex == 5) break;
             }
             if(ua[3] == (ua[1]^ua[2]) && ua[2]==0x07){
-                printf("llclose exited successfully\n");
                 if (tcsetattr(fd,TCSANOW,&oldtio) == -1)
                   perror("tcsetattr failed in llclose\n");
+                printf("llclose exited successfully\n");
                 return close(fd);
             }
             else
