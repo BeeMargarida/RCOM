@@ -2,7 +2,6 @@
 
 int serial_fd;
 int turnPacket = 0;
-char* lastData;
 
 unsigned char generateBCC(unsigned char* buf, int size);
 int destuffing(unsigned char* tram, unsigned char* buf, int size);
@@ -13,10 +12,9 @@ void sendRR();
 int llread(int fd, unsigned char* buf)
 {
 	serial_fd = fd;
-	lastData = calloc(BUF_SIZE, sizeof(char));
 	int reading = TRUE;
 	int nread;
-	unsigned char* buffer = calloc(BUF_SIZE*2, sizeof(unsigned char));
+	unsigned char* buffer = malloc(BUF_SIZE*2*sizeof(unsigned char));
 	int i = 0;
 	while (reading)
 	{
@@ -26,7 +24,7 @@ int llread(int fd, unsigned char* buf)
 			printf("Error reading from serial port on llread");
 			return 1;
 		}
-		if (i != 0 && buffer[i] == 0x7E){
+		if (i != 0 && buffer[i] == 0x7E && nread > 0){
 			reading = FALSE;
 			processTram(buffer, buf, i);
 		}
@@ -68,12 +66,10 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
-		free(buf);
 		sendREJ();
 		return;
 	}
 	int j = destuffing(tram, buf, size);
-
 	unsigned char bcc2 = buf[j - 1];
 	int check = generateBCC(buf, j);
 
@@ -83,11 +79,10 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 		sendREJ();
 		return;
 	}
-
+	
 	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
 		turnPacket = turnPacket == 1 ? 0 : 1;
 		sendRR();
-		memcpy(lastData, buf, j - 1);
 		return;
 	}
 	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
@@ -97,6 +92,7 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 	}
 	else {
 		free(buf);
+		printf("HERE3!\n");
 		sendREJ();
 		return;
 	}

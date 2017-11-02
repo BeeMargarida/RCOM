@@ -54,10 +54,10 @@ int startReceiver(int serial_no)
 	serial_fd = llopen(serial_no, RECEIVER);
 
 	int reading = TRUE;
+	unsigned char* buf = calloc(BUF_SIZE, sizeof(unsigned char));
 	int first = FALSE;
 	while (reading)
 	{
-		unsigned char* buf = malloc(BUF_SIZE*2*sizeof(unsigned char));
 		int read = llread(serial_fd, buf);
 
 		if(buf == NULL){
@@ -132,7 +132,7 @@ void unpackDataPacket(unsigned char* buf)
 
 	currentSize += x;
 	cnt++;
-	//printProgressBar();
+	printProgressBar();
 }
 
 void unpackEndPacket(unsigned char* buf)
@@ -164,9 +164,9 @@ void unpackEndPacket(unsigned char* buf)
 		for (i += 1, j = 0; i <= namelength + n; i++, j++)
 			filename[j] = buf[i];
 	}
-/*	if (access(filename, F_OK) != -1)
+	if (access(filename, F_OK) != -1)
 		printStatistics(filename);
-*/
+
 	return;
 }
 
