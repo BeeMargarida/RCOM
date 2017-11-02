@@ -2,6 +2,7 @@
 
 volatile int STOP=FALSE;
 int flag=1, conta=1;
+struct termios oldtio;
 
 void receive_alarm() {
     printf("alarme # %d\n", conta);
@@ -19,7 +20,7 @@ int create_alarm() {
 int llopen(int serial, Types_t type) {
 
     int fd;
-    struct termios oldtio,newtio;
+    struct termios newtio;
 
     switch (serial)
     {
@@ -201,6 +202,9 @@ int llclose(int fd, Types_t type){
             char ua[5] = {0x7E, 0x03, 0x07, 0x04, 0x7E};
             write(fd, ua, 5);
             printf("llclose exited successfully\n");
+            usleep(1000);
+            if (tcsetattr(fd,TCSANOW,&oldtio) == -1)
+              perror("tcsetattr failed in llclose\n");
             return close(fd);
         }
         else
@@ -215,7 +219,7 @@ int llclose(int fd, Types_t type){
         int x;
         int currentIndex = 0;
         STOP = FALSE;
-        while (STOP==FALSE) {      
+        while (STOP==FALSE) {
             x = read(fd, &input, 1);
             if (x == 0)
                 continue;
@@ -248,7 +252,7 @@ int llclose(int fd, Types_t type){
             first = 0;
             char ua[5] = {};
             currentIndex = 0;
-            while (STOP==FALSE) {       
+            while (STOP==FALSE) {
                 x = read(fd, &input, 1);
                 if (x == 0)
                     continue;
@@ -268,6 +272,8 @@ int llclose(int fd, Types_t type){
             }
             if(ua[3] == (ua[1]^ua[2]) && ua[2]==0x07){
                 printf("llclose exited successfully\n");
+                if (tcsetattr(fd,TCSANOW,&oldtio) == -1)
+                  perror("tcsetattr failed in llclose\n");
                 return close(fd);
             }
             else

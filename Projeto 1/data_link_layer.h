@@ -13,7 +13,7 @@
 #include "utils.h"
 
 #define BAUDRATE B38400
-#define BUF_SIZE 1024
+#define BUF_SIZE 256
 #define BUF_MAX 2048
 #define RETRIES 4
 #define PROBABILITY_DATA 60
