@@ -55,7 +55,7 @@ int startReceiver(int serial_no)
 	int first = FALSE;
 	while (reading)
 	{
-		unsigned char* buf = malloc(BUF_SIZE*2*sizeof(unsigned char));
+		unsigned char* buf = malloc(BUF_MAX*sizeof(unsigned char));
 		int read = llread(serial_fd, buf);
 
 		if(buf == NULL){
@@ -122,7 +122,7 @@ void unpackStartPacket(unsigned char* buf)
 void unpackDataPacket(unsigned char* buf)
 {
 	int seqN = buf[1];
-	int n = BUF_SIZE * buf[2] + buf[3];
+	int n = 256 * buf[2] + buf[3];
 	int x = write(fileDescriptor, buf + 4, n);
 
 	if (x != n)
@@ -234,13 +234,8 @@ control_packet_t createDataPacket(int fdimage, int nseq){
 	unsigned char N = nseq;
 	unsigned char L2;
 	unsigned char L1;
-	if(size == BUF_SIZE){
-		L2 = 0x01;
-		L1 = 0x00;
-	} else {
-		L2 = 0x00;
-		L1 = size;
-	}
+	L2 = size / 256;
+	L1 = size % 256;
 	unsigned char *temp = malloc((4+size) * sizeof(unsigned char));
 	temp[0] = C;
 	temp[1] = N;

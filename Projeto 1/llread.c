@@ -27,7 +27,8 @@ int llread(int fd, unsigned char* buf)
 		}
 		if (i != 0 && buffer[i] == 0x7E){
 			reading = FALSE;
-			createErrors(buffer, i);
+			//createErrors(buffer, i);
+			//usleep(1000*400);
 			processTram(buffer, buf, i);
 		}
 		i += nread;
