@@ -3,6 +3,7 @@
 int serial_fd;
 int turnPacket = 0;
 
+void createErrors(unsigned char* buffer, int size);
 unsigned char generateBCC(unsigned char* buf, int size);
 int destuffing(unsigned char* tram, unsigned char* buf, int size);
 void processTram(unsigned char* tram, unsigned char* buf, int size);
@@ -24,13 +25,27 @@ int llread(int fd, unsigned char* buf)
 			printf("Error reading from serial port on llread");
 			return 1;
 		}
-		if (i != 0 && buffer[i] == 0x7E && nread > 0){
+		if (i != 0 && buffer[i] == 0x7E){
 			reading = FALSE;
+			createErrors(buffer, i);
 			processTram(buffer, buf, i);
 		}
 		i += nread;
 	}
 	return i;
+}
+
+void createErrors(unsigned char* buffer, int size){
+	int chanceData = rand() % 100;
+	if(chanceData < PROBABILITY_DATA){
+		int byte = rand() % (size - 3) + 4;
+		buffer[byte] = ~buffer[byte];
+	}
+	int chanceHeader = rand() % 100;
+	if(chanceHeader < PROBABILITY_HEADER){
+		int byteH = rand() % 3 + 1;
+		buffer[byteH] = ~buffer[byteH];
+	}
 }
 
 int destuffing(unsigned char* tram, unsigned char* buf, int size) {

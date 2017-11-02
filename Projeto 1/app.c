@@ -1,7 +1,5 @@
 #include "application_layer.h"
 #include "data_link_layer.h"
-#include <time.h>
-#include <sys/time.h>
 
 int fileSize = 0;
 int currentSize = 0;
@@ -132,7 +130,7 @@ void unpackDataPacket(unsigned char* buf)
 
 	currentSize += x;
 	cnt++;
-	//printProgressBar();
+	printProgressBar();
 }
 
 void unpackEndPacket(unsigned char* buf)
@@ -164,9 +162,9 @@ void unpackEndPacket(unsigned char* buf)
 		for (i += 1, j = 0; i <= namelength + n; i++, j++)
 			filename[j] = buf[i];
 	}
-/*	if (access(filename, F_OK) != -1)
+	if (access(filename, F_OK) != -1)
 		printStatistics(filename);
-*/
+
 	return;
 }
 

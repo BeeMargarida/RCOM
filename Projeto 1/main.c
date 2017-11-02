@@ -8,7 +8,7 @@ void printUsage()
 }
 
 int main(int argc, char** argv)
-{
+{	
 	if (argc <= 1)
 	{
 		printUsage();
@@ -30,6 +30,7 @@ int main(int argc, char** argv)
 
 	if (strcmp(argv[1], "-r") == 0 && argc >= 2)
  	{
+		srand((unsigned) time(NULL));
 		return startReceiver(serial_no);
 	}
 	else if (strcmp(argv[1], "-s") == 0)
