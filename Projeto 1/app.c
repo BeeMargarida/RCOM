@@ -308,7 +308,6 @@ int startSender(char* fileName, int serial_no)
 	double elapsedTime = (end.tv_sec - start.tv_sec) * 1000000.00 + (end.tv_nsec - start.tv_nsec) / 1000.00;
 
 	clearScreen();
-	stats->rej = -(cnt - stats->packets);
 	printStatisticsSender(fileName, elapsedTime/1000000, fsize, stats);
 
 	return llclose(serial_fd, SENDER);

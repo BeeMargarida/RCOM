@@ -110,7 +110,6 @@ int waitForAnswer(int serial_fd, statistics_t *stats){
 			return 1;
 		}
 		else if((answer[2] == 0x01 && turn == 0) || (answer[2] == 0x81 && turn == 1)){
-			stats->rej++;
 			return 1;
 		}
 		else if((answer[2] == 0x05 && turn == 0) || (answer[2] == 0x85 && turn == 1)){
@@ -119,6 +118,7 @@ int waitForAnswer(int serial_fd, statistics_t *stats){
 			return 0;
 		}
 		else {
+			stats->rej++;
 			return -1;
 		}
 	}
