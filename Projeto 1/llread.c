@@ -1,21 +1,23 @@
 #include "data_link_layer.h"
 
+char* lastData;
 int serial_fd;
 int turnPacket = 0;
 
 void createErrors(unsigned char* buffer, int size);
 unsigned char generateBCC(unsigned char* buf, int size);
 int destuffing(unsigned char* tram, unsigned char* buf, int size);
-void processTram(unsigned char* tram, unsigned char* buf, int size);
+void processTram(unsigned char* tram, unsigned char* buf, int size, statistics_t *stats);
 void sendREJ();
 void sendRR();
 
-int llread(int fd, unsigned char* buf)
+int llread(int fd, unsigned char* buf, statistics_t *stats)
 {
 	serial_fd = fd;
 	int reading = TRUE;
 	int nread;
 	unsigned char* buffer = malloc(BUF_SIZE*2*sizeof(unsigned char));
+	lastData = calloc(BUF_SIZE, sizeof(char));
 	int i = 0;
 	while (reading)
 	{
@@ -27,9 +29,9 @@ int llread(int fd, unsigned char* buf)
 		}
 		if (i != 0 && buffer[i] == 0x7E){
 			reading = FALSE;
+			stats->packets += 1;
 			//createErrors(buffer, i);
-			//usleep(1000*400);
-			processTram(buffer, buf, i);
+			processTram(buffer, buf, i, stats);
 		}
 		i += nread;
 	}
@@ -78,11 +80,11 @@ int destuffing(unsigned char* tram, unsigned char* buf, int size) {
 	return j;
 }
 
-void processTram(unsigned char* tram, unsigned char* buf, int size){
+void processTram(unsigned char* tram, unsigned char* buf, int size, statistics_t * stats){
 	char bcc1 = tram[3];
 	if (bcc1 != (tram[1] ^ tram[2]))
 	{
-		sendREJ();
+		sendREJ(&stats->rej);
 		return;
 	}
 	int j = destuffing(tram, buf, size);
@@ -92,24 +94,25 @@ void processTram(unsigned char* tram, unsigned char* buf, int size){
 	if (bcc2 != check)
 	{
 		free(buf);
-		sendREJ();
+		sendREJ(&stats->rej);
 		return;
 	}
-	
-	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)){
+	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
+	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40) && isNew){
 		turnPacket = turnPacket == 1 ? 0 : 1;
-		sendRR();
+		sendRR(&stats->rr);
+		memcpy(lastData, buf, j - 1);
 		return;
 	}
-	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)){
+	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40) && !isNew){
 		free(buf);
-		sendRR();
+		sendRR(&stats->rr);
 		return;
 	}
 	else {
 		free(buf);
 		printf("HERE3!\n");
-		sendREJ();
+		sendREJ(&stats->rej);
 		return;
 	}
 }
@@ -125,7 +128,7 @@ unsigned char generateBCC(unsigned char* buf, int size)
 	return bcc;
 }
 
-void sendREJ()
+void sendREJ(int * c_rej)
 {
 	unsigned char rej[] = { 0x7E, 0x03, 0x01, 0x03, 0x7E };
 	rej[2] = (turnPacket == 0 ? 0x01 : 0x81);
@@ -133,9 +136,10 @@ void sendREJ()
 	int n = write(serial_fd, rej, 5);
 	if (n < 0)
 		perror("Failed to write to serial port in sendREJ\n");
+	*c_rej += 1;
 }
 
-void sendRR()
+void sendRR(int * c_rr)
 {
 	unsigned char rr[] = { 0x7E, 0x03, 0x05, 0xF3, 0x7E };
 	rr[2] = (turnPacket == 0 ? 0x05 : 0x85);
@@ -143,4 +147,5 @@ void sendRR()
 	int n = write(serial_fd, rr, 5);
 	if (n < 0)
 		perror("Failed to write to serial port in sendRR\n");
+	*c_rr += 1;
 }

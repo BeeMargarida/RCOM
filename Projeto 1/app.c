@@ -12,7 +12,7 @@ int fileDescriptor;
 
 void unpackStartPacket(unsigned char* buf);
 void unpackDataPacket(unsigned char* buf);
-void unpackEndPacket(unsigned char* buf);
+void unpackEndPacket(unsigned char* buf, statistics_t * stats);
 void writeDataStart(unsigned char* buf);
 void writeDataBlock(unsigned char* buf);
 int getFileSize();
@@ -34,10 +34,13 @@ void printProgressBar()
 	printf("] %.1f%%\n", percentage*100.0);
 }
 
-void printStatistics(char* filename){
+void printStatistics(char* filename, statistics_t * stats){
 	printf("File %s transfered successfully\n", filename);
 	printf("Final size: %d bytes\n", currentSize);
+	printf("Total data packets: %d\n", stats->packets);
 	printf("Distinct data packets: %d\n", cnt);
+	printf("RR sent: %d\n", stats->rr);
+	printf("REJ sent: %d\n", stats->rej);
 }
 
 void printStatisticsSender(char* filename, double time_diff, int fsize, statistics_t *stats){
@@ -55,10 +58,15 @@ int startReceiver(int serial_no)
 
 	int reading = TRUE;
 	int first = FALSE;
+
+	statistics_t *stats = malloc(sizeof(statistics_t));
+	stats->packets = 0;
+	stats->rr = 0;
+	stats->rej = 0;
 	while (reading)
 	{
 		unsigned char* buf = malloc(BUF_MAX*sizeof(unsigned char));
-		int read = llread(serial_fd, buf);
+		int read = llread(serial_fd, buf, stats);
 
 		if(buf == NULL){
 			continue;
@@ -79,7 +87,7 @@ int startReceiver(int serial_no)
 		}
 		else if (buf[0] == DATA_END && first == TRUE)
 		{
-			unpackEndPacket(buf);
+			unpackEndPacket(buf, stats);
 			reading = FALSE;
 		}
 		else if (buf[0] == DATA_BLOCK && first == TRUE)
@@ -113,7 +121,7 @@ void unpackStartPacket(unsigned char* buf)
 		for (i += 1, j = 0; i <= namelength + n; i++, j++)
 			filename[j] = buf[i];
 	}
-
+	cnt++;
 	fileDescriptor = open((char*)filename, O_WRONLY | O_CREAT, MODE);
 	if (fileDescriptor < 0)
 	{
@@ -135,7 +143,7 @@ void unpackDataPacket(unsigned char* buf)
 	printProgressBar();
 }
 
-void unpackEndPacket(unsigned char* buf)
+void unpackEndPacket(unsigned char* buf, statistics_t * stats)
 {
 	int i;
 	int fileSizeFinal = 0;
@@ -164,8 +172,9 @@ void unpackEndPacket(unsigned char* buf)
 		for (i += 1, j = 0; i <= namelength + n; i++, j++)
 			filename[j] = buf[i];
 	}
+	cnt++;
 	if (access(filename, F_OK) != -1)
-		printStatistics(filename);
+		printStatistics(filename, stats);
 
 	return;
 }

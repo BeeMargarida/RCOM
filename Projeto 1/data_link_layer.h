@@ -20,7 +20,7 @@
 #define PROBABILITY_HEADER 60
 
 int llopen(int serial, Types_t type);
-int llread(int fd, unsigned char* buf);
+int llread(int fd, unsigned char* buf, statistics_t * stats);
 int llwrite(int serial_fd, control_packet_t packet, statistics_t *stats);
 int llclose(int fd, Types_t type);
 
