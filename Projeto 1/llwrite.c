@@ -94,7 +94,7 @@ void sendTrama(int serial_fd, control_packet_t packet){
 	}
 }
 
-int waitForAnswer(int serial_fd){
+int waitForAnswer(int serial_fd, statistics_t *stats){
 	int nread;
 
 	unsigned char answer[5] = {};
@@ -110,10 +110,12 @@ int waitForAnswer(int serial_fd){
 			return 1;
 		}
 		else if((answer[2] == 0x01 && turn == 0) || (answer[2] == 0x81 && turn == 1)){
+			stats->rej++;
 			return 1;
 		}
 		else if((answer[2] == 0x05 && turn == 0) || (answer[2] == 0x85 && turn == 1)){
 			numPacket++;
+			stats->rr++;
 			return 0;
 		}
 		else {
@@ -125,18 +127,19 @@ int waitForAnswer(int serial_fd){
 	}
 }
 
-int llwrite(int serial_fd, control_packet_t packet) {
+int llwrite(int serial_fd, control_packet_t packet, statistics_t *stats) {
 	control_packet_t packetI = createTramaI(packet);
 	create_alarm_no_count();
-	turn = 1 - turn;
 	int cycle = TRUE;
+	turn = 1 - turn;
 	int answer = -1;
 	while(cycle){
 		sendTrama(serial_fd, packetI);
+		stats->packets++;
 		f = 0;
 		alarm(1);
 		while(f == 0 && answer == -1){
-			answer = waitForAnswer(serial_fd);
+			answer = waitForAnswer(serial_fd, stats);
 			if(answer == 0){
 				cycle = FALSE;
 				alarm(0);

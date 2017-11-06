@@ -34,16 +34,18 @@ void printProgressBar()
 	printf("] %.1f%%\n", percentage*100.0);
 }
 
-void printStatistics(char* filename)
-{
+void printStatistics(char* filename){
 	printf("File %s transfered successfully\n", filename);
 	printf("Final size: %d bytes\n", currentSize);
 	printf("Distinct data packets: %d\n", cnt);
 }
 
-void printStatisticsSender(char* filename, double time_diff, int fsize){
+void printStatisticsSender(char* filename, double time_diff, int fsize, statistics_t *stats){
 	printf("File %s transfered successfully in %.02f seconds\n", filename, time_diff);
+	printf("Total data packets: %d\n", stats->packets);
 	printf("Distinct data packets: %d\n", cnt);
+	printf("RR received: %d\n", stats->rr);
+	printf("REJ received: %d\n", stats->rej);
 	printf("Connection Cap: %.02f bits/sec\n", (double)((fsize*8) / time_diff));
 }
 
@@ -204,7 +206,7 @@ control_packet_t createFirstEndPacket(int fsize, char* fileName, int id) {
 	return controlPacket;
 }
 
-int sendControlPacket(int SorR, int fsize, char* fname){
+int sendControlPacket(int SorR, int fsize, char* fname, statistics_t *stats){
 	control_packet_t packet;
 	switch(SorR){
 		case 0: //start
@@ -215,9 +217,10 @@ int sendControlPacket(int SorR, int fsize, char* fname){
 			packet = createFirstEndPacket(fsize, fname, SorR);
 			break;
 	}
-	if(llwrite(serial_fd, packet)){
+	if(llwrite(serial_fd, packet, stats)){
 		return -1;
 	}
+	cnt++;
 	return 0;
 }
 
@@ -277,30 +280,36 @@ int startSender(char* fileName, int serial_no)
 	struct timespec start,end;
 	clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 
+	statistics_t *stats = malloc(sizeof(statistics_t));
+	stats->packets = 0;
+	stats->rr = 0;
+	stats->rej = 0;
+
 	int fsize = getFileSize();
 
 	//send start packet
-	if(sendControlPacket(0, fsize, fileName))
+	if(sendControlPacket(0, fsize, fileName, stats))
 		return -1;
 
 	//send data packet
 	while(!lastCycle){
 		control_packet_t packet	= sendDataPacket();
-		if(llwrite(serial_fd, packet)){
+		if(llwrite(serial_fd, packet, stats)){
 			return -1;
 		}
 		cnt++;
 	}
 
 	//send end packet
-	if(sendControlPacket(1, fsize, fileName))
+	if(sendControlPacket(1, fsize, fileName, stats))
 		return -1;
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &end);
 	double elapsedTime = (end.tv_sec - start.tv_sec) * 1000000.00 + (end.tv_nsec - start.tv_nsec) / 1000.00;
 
 	clearScreen();
-	printStatisticsSender(fileName, elapsedTime/1000000, fsize);
+	stats->rej = -(cnt - stats->packets);
+	printStatisticsSender(fileName, elapsedTime/1000000, fsize, stats);
 
 	return llclose(serial_fd, SENDER);
 }

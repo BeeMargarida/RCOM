@@ -21,7 +21,7 @@
 
 int llopen(int serial, Types_t type);
 int llread(int fd, unsigned char* buf);
-int llwrite(int serial_fd, control_packet_t packet);
+int llwrite(int serial_fd, control_packet_t packet, statistics_t *stats);
 int llclose(int fd, Types_t type);
 
 void receive_alarm();

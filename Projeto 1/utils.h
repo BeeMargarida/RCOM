@@ -15,4 +15,10 @@ typedef enum {
 	SENDER, RECEIVER
 } Types_t;
 
+typedef struct {
+	int packets;
+	int rr;
+	int rej;
+} statistics_t;
+
 #endif
