@@ -97,21 +97,20 @@ void processTram(unsigned char* tram, unsigned char* buf, int size, statistics_t
 		sendREJ(&stats->rej);
 		return;
 	}
-	int isNew = memcmp(buf, lastData, j - 1) == 0 ? TRUE : FALSE;
-	if((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40) && isNew){
+	int isNew = memcmp(buf, lastData, j - 1) == 0 ? FALSE : TRUE;
+	if(((turnPacket == 0 && tram[2] == 0x00) || (turnPacket == 1 && tram[2] == 0x40)) && isNew){
 		turnPacket = turnPacket == 1 ? 0 : 1;
 		sendRR(&stats->rr);
 		memcpy(lastData, buf, j - 1);
 		return;
 	}
-	else if((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40) && !isNew){
+	else if(((turnPacket == 1 && tram[2] == 0x00) || (turnPacket == 0 && tram[2] == 0x40)) && !isNew){
 		free(buf);
 		sendRR(&stats->rr);
 		return;
 	}
 	else {
 		free(buf);
-		printf("HERE3!\n");
 		sendREJ(&stats->rej);
 		return;
 	}

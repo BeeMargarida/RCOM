@@ -11,14 +11,14 @@ typedef struct {
 	int size;
 } control_packet_t;
 
-typedef enum {
-	SENDER, RECEIVER
-} Types_t;
-
 typedef struct {
 	int packets;
 	int rr;
 	int rej;
 } statistics_t;
+
+typedef enum {
+	SENDER, RECEIVER
+} Types_t;
 
 #endif
