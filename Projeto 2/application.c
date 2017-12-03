@@ -8,6 +8,7 @@
 url_t parseUrl(char* rawUrl)
 {
 	url_t url;
+	url.url = rawUrl;
 
 	if (strncmp("ftp://", rawUrl, URL_START))
 		usageError("ftp:// header must be declared");
@@ -44,10 +45,20 @@ url_t parseUrl(char* rawUrl)
 		url.host = rawUrl + URL_START;
 	}
 
+	char* firstSlash = strchr(url.host, '/');
+	if (firstSlash != NULL)
+	{
+		char* host = (char*)calloc(50, sizeof(char));
+		memcpy(host, url.host, firstSlash - url.host);
+		url.dir = ++firstSlash;
+		url.host = host;
+	}
+	else
+		url.dir = NULL;
+
 	url.ip = getIPbyHostname(url.host);
 	if (url.ip == NULL)
 		usageError("Specified host does not match any valid IP");
-	printf("IP = %s\n", url.ip);
 
 	return url;
 }
@@ -61,6 +72,7 @@ void usageError(char* error)
 
 int download(url_t url)
 {
-	//ftp...
-	return 0;
+	ftpConnection_t ftp = createConnectionFTP(url);
+	//...
+	return destroyConnectionFTP(ftp);
 }
