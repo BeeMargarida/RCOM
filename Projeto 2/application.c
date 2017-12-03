@@ -40,8 +40,8 @@ url_t parseUrl(char* rawUrl)
 	}
 	else
 	{
-		url.username = NULL;
-		url.password = NULL;
+		url.username = "anonymous";
+		url.password = "password";
 		url.host = rawUrl + URL_START;
 	}
 
@@ -54,7 +54,21 @@ url_t parseUrl(char* rawUrl)
 		url.host = host;
 	}
 	else
+		usageError("Path must be specified");
+
+	char* lastSlash = strrchr(url.dir, '/');
+	if (lastSlash != NULL)
+	{
+		char* dir = (char*)calloc(50, sizeof(char));
+		memcpy(dir, url.dir, lastSlash - url.dir);
+		url.file = ++lastSlash;
+		url.dir = dir;
+	}
+	else
+	{
+		url.file = url.dir;
 		url.dir = NULL;
+	}
 
 	url.ip = getIPbyHostname(url.host);
 	if (url.ip == NULL)
@@ -73,6 +87,15 @@ void usageError(char* error)
 int download(url_t url)
 {
 	ftpConnection_t ftp = createConnectionFTP(url);
-	//...
+
+	if (authenticateFTP(ftp, url) == -1)
+		return -1;
+
+	if (url.dir != NULL)
+	{
+		if (setDirectoryFTP(ftp, url.dir) == -1)
+			return -1;
+	}
+
 	return destroyConnectionFTP(ftp);
 }

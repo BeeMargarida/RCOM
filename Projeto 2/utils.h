@@ -7,6 +7,7 @@ typedef struct url_t {
 	char* password;
 	char* host;
 	char* dir;
+	char* file;
 	char* ip;
 } url_t;
 
