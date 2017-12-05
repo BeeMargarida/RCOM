@@ -15,7 +15,8 @@ typedef struct ftpConnection_t {
 ftpConnection_t createConnectionFTP(url_t url);
 int authenticateFTP(ftpConnection_t ftp, url_t url);
 int setDirectoryFTP(ftpConnection_t ftp, char* directory);
-//...
+int setPassiveModeFTP(ftpConnection_t ftp);
+int downloadFTP(ftpConnection_t ftp);
 int destroyConnectionFTP(ftpConnection_t ftp);
 
 #endif

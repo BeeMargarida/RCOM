@@ -2,27 +2,20 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include "ftp.h"
 
 int sendCommandFTP(int controlSocket, char* command)
 {
-	int sent = write(controlSocket, command, strlen(command));
+	int sent = send(controlSocket, command, strlen(command), MSG_WAITALL);
 	return sent;
 }
 
 int receiveAnswerFTP(int controlSocket, char* answer)
 {
-	int nread = 0;
-	int rd;
-	do
-	{
-		rd = read(controlSocket, answer + nread, BUF_SIZE*3);
-		if (rd == -1)
-			return -1;
-		nread += rd;
-	} while (answer[nread - 1] != '\n');
-
-	return nread;
+	int n = recv(controlSocket, answer, BUF_SIZE*3, 0);
+	return n;
 }
 
 ftpConnection_t createConnectionFTP(url_t url)
@@ -103,6 +96,16 @@ int setDirectoryFTP(ftpConnection_t ftp, char* directory)
 	}
 	printf("%s", answer);
 
+	return 0;
+}
+
+int setPassiveModeFTP(ftpConnection_t ftp)
+{
+	return 0;
+}
+
+int downloadFTP(ftpConnection_t ftp)
+{
 	return 0;
 }
 

@@ -97,5 +97,11 @@ int download(url_t url)
 			return -1;
 	}
 
+	if (setPassiveModeFTP(ftp) == -1)
+		return -1;
+
+	if (downloadFTP(ftp) == -1)
+		return -1;
+
 	return destroyConnectionFTP(ftp);
 }

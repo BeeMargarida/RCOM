@@ -1,1 +1,1 @@
-./download ftp://ftp.fe.up.pt/bin/ls
+./download ftp://ftp.fe.up.pt/pub/Docs/feup/feuplogo.bmp
