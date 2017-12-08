@@ -101,6 +101,39 @@ int setDirectoryFTP(ftpConnection_t ftp, char* directory)
 
 int setPassiveModeFTP(ftpConnection_t ftp)
 {
+	char *passive = calloc(BUF_SIZE, sizeof(char));
+	sprintf(passive, "PASV\n");
+	char* answer = calloc(BUF_SIZE, sizeof(char));
+
+	int sent = sendCommandFTP(ftp.controlSocket, passive);
+	if (sent < strlen(command))
+	{
+		printf("Error sending command CWD\n");
+		return -1;
+	}
+	int received = receiveAnswerFTP(ftp.controlSocket, answer);
+	if (received < 3 /*|| strstr(answer, "500") == NULL*/)
+	{
+		printf("Error switching to directory %s\n", directory);
+		return -1;
+	}
+	printf("%s", answer);
+
+	int h1, h2, h3, h4, p1, p2;
+	if((sscanf(answer,"227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)", &h1,&h2,&h3,&h4,&p1,&p2)) < 0){
+		printf("FTP response isn't the one expected");
+		return -1;
+	}
+
+	char *newIP = calloc(BUF_SIZE, sizeof(char));
+	sprintf(newIP, "%d.%d.%d.%d", h1,h2,h3,h4);
+	int newPort = p1*256+p2;
+
+	ftp.dataSocket = createSocket(newPort, newIP);
+	if(ftp.dataSocket < 0){
+		printf("Error entering passive mode\n");
+		return -1;
+	}
 	return 0;
 }
 
