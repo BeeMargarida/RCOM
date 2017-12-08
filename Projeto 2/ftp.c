@@ -106,15 +106,15 @@ int setPassiveModeFTP(ftpConnection_t ftp)
 	char* answer = calloc(BUF_SIZE, sizeof(char));
 
 	int sent = sendCommandFTP(ftp.controlSocket, passive);
-	if (sent < strlen(command))
+	if (sent < strlen(passive))
 	{
-		printf("Error sending command CWD\n");
+		printf("Error sending command PASV\n");
 		return -1;
 	}
 	int received = receiveAnswerFTP(ftp.controlSocket, answer);
 	if (received < 3 /*|| strstr(answer, "500") == NULL*/)
 	{
-		printf("Error switching to directory %s\n", directory);
+		printf("Error getting into passive mode\n");
 		return -1;
 	}
 	printf("%s", answer);
