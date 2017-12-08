@@ -104,8 +104,32 @@ int setPassiveModeFTP(ftpConnection_t ftp)
 	return 0;
 }
 
-int downloadFTP(ftpConnection_t ftp)
+int downloadFTP(ftpConnection_t ftp, char* filename)
 {
+	FILE * file;
+
+	file = fopen(filename, "w");
+	if(file < 0){
+		printf("Error opening file with the name %s\n", filename);
+		return -1;
+	}
+
+	char buf[BUF_SIZE];
+	int readBytes;
+	while((readBytes = read(ftp.dataSocket, buf, sizeof(buf)))){
+		if(readBytes < 0){
+			printf("Error reading from the socket\n");
+			return -1;
+		}
+
+		if((readBytes = fwrite(buf, readBytes, 1, file)) < 0){
+			printf("Error writing\n");
+			return -1;
+		}
+	}
+
+	fclose(file);
+	close(ftp.dataSocket);
 	return 0;
 }
 

@@ -100,7 +100,7 @@ int download(url_t url)
 	if (setPassiveModeFTP(ftp) == -1)
 		return -1;
 
-	if (downloadFTP(ftp) == -1)
+	if (downloadFTP(ftp, url.file) == -1)
 		return -1;
 
 	return destroyConnectionFTP(ftp);
