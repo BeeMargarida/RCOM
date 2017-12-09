@@ -86,7 +86,7 @@ void usageError(char* error)
 
 int download(url_t url)
 {
-	ftpConnection_t ftp = createConnectionFTP(url);
+	ftpConnection_t* ftp = createConnectionFTP(url);
 
 	if (authenticateFTP(ftp, url) == -1)
 		return -1;
@@ -98,6 +98,9 @@ int download(url_t url)
 	}
 
 	if (setPassiveModeFTP(ftp) == -1)
+		return -1;
+
+	if(retrieveFTP(ftp, url.file) == -1)
 		return -1;
 
 	if (downloadFTP(ftp, url.file) == -1)

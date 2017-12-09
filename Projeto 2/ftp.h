@@ -12,11 +12,12 @@ typedef struct ftpConnection_t {
 	int dataSocket;
 } ftpConnection_t;
 
-ftpConnection_t createConnectionFTP(url_t url);
-int authenticateFTP(ftpConnection_t ftp, url_t url);
-int setDirectoryFTP(ftpConnection_t ftp, char* directory);
-int setPassiveModeFTP(ftpConnection_t ftp);
-int downloadFTP(ftpConnection_t ftp, char* filename);
-int destroyConnectionFTP(ftpConnection_t ftp);
+ftpConnection_t* createConnectionFTP(url_t url);
+int authenticateFTP(ftpConnection_t *ftp, url_t url);
+int setDirectoryFTP(ftpConnection_t *ftp, char* directory);
+int setPassiveModeFTP(ftpConnection_t *ftp);
+int retrieveFTP(ftpConnection_t *ftp, char* filename);
+int downloadFTP(ftpConnection_t *ftp, char* filename);
+int destroyConnectionFTP(ftpConnection_t *ftp);
 
 #endif
