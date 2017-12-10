@@ -1,7 +1,7 @@
 #!/bin/bash
 #router_config
 
-copy flash:tux5-clean startup-config <t04gFixe>
+copy flash:tux5-clean startup-config
 reload
 
 copy running-config flash:<t04gFixe>

@@ -1,1 +1,1 @@
-./download ftp://speedtest.tele2.net/1MB.zip
+./download ftp://speedtest.tele2.net/1GB.zip
